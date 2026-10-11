@@ -1,0 +1,29 @@
+name: ProofCut Pinned Independent Five-Repo Holdout
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install parser dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Validate and scan all 97 pinned unseen YAML files
+        run: python -m benchmarks.heldout_scan
+      - name: Keep read-only cross-project reports including incomplete failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-five-repo-holdout
+          path: baseline-results/heldout/
+          retention-days: 14
+          if-no-files-found: warn
