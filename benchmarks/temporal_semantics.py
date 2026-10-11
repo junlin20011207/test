@@ -99,7 +99,7 @@ def temporal_contract(steps):
         "explanation":{
             "unique_steps":bool(unique),
             "mandatory_precedence_edges":causal_edges,
-            "indices":{name:(values[0] if len(values)==1 else None)}
+            "indices":{name:(values[0] if len(values)==1 else None)
                        for name,values in indices.items()},
             "step_conditions":dict(zip(labels,decisions)),
             "download_continue_on_error":download_tolerance,
