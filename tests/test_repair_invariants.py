@@ -44,7 +44,7 @@ def prepared():
 def test_good_contract_all_obligations_hold():
     producer,consumer=prepared()
     result=check_dist_contract(producer,consumer)
-    assert result["passed"] and result["passed_count"]==result["total_count"]
+    assert result["passed"] and result["passed_count"]==result["total_count"],result["checks"]
     assert result["total_count"]>=12
 
 
