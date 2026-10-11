@@ -117,7 +117,7 @@ def harden(existing,producer,consumer,producer_steps,consumer_steps):
     verification=next((s for s in consumer_steps if isinstance(s,dict) and
                        "git rev-parse HEAD" in str(s.get("run",""))),{})
     pusher=next((s for s in consumer_steps if isinstance(s,dict) and
-                 re.search(r"(?m)^\s*git\s+push\s+origin",str(s.get("run","")))),{})
+                 re.search(r"(?m)^\s*git\s+push\s+(?:--force-with-lease=\S+\s+)?origin\b",str(s.get("run","")))),{})
     checks["publisher_named_and_dist_only"]=(
         checks["publisher_named_and_dist_only"] and
         unique_action(producer_steps,"upload-artifact"))
