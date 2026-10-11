@@ -19,7 +19,7 @@ for tool in tools:
         try:
             data=json.loads(raw)
             if tool=="boundarygraph":
-                print(f'{case}: paths={len(data.get("findings",[]))}, unknown={len(data.get("unknowns",[]))}')
+                print(f'{case}: declared_paths={len(data.get("findings",[]))}, unverified={len(data.get("unverified",[]))}, unknown={len(data.get("unknowns",[]))}')
             elif tool=="zizmor":
                 findings=data if isinstance(data,list) else [data]
                 names=[str(x.get("ident","unknown")) for x in findings if isinstance(x,dict)]
