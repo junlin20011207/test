@@ -54,10 +54,10 @@
 | 原先普通 Push 草案 | 16/16 通过 | **不通过**（缺失显式 Lease） |
 | 临时生成的 CAS 候选 | 16 项继续成立 | **17/17 通过** |
 
-除正例外，增加 11 项针对来源 SHA、分支绑定、执行顺序、失效掩盖、Shell 类型和额外 Push 的单项负例。完整回归 **314 项通过**，新严格层级还有额外 2 项正反对照。
+除正例外，增加 11 项针对来源 SHA、分支绑定、执行顺序、失效掩盖、Shell 类型和额外 Push 的单项负例。完整回归 **320 项通过**（含严格层级正反对照、4 项 Shell 控制流反例），完整回归全部通过。
 
-[GitHub 全量自动化测试](https://github.com/junlin20011207/test/actions/runs/38149029324)；
-[SHA 固定历史样本修复、16/16 与 17/17 的并行验收](https://github.com/junlin20011207/test/actions/runs/38149195730)。
+[GitHub 全量自动化测试](https://github.com/junlin20011207/test/actions/runs/38149518900)；
+[SHA 固定历史样本修复、16/16 与 17/17 的并行验收](https://github.com/junlin20011207/test/actions/runs/38149518867)。
 
 ## 第三轮：真实修复候选生成与独立扫描
 
@@ -68,6 +68,31 @@
 可选 `--codeql` 将本候选再交由 SHA-256 校验的官方 CodeQL 2.27.2 `actions-security-extended.qls` 查询集在独立临时工作区中扫描，并保留原始 SARIF：`.github/workflows/codeql-compare.yml`。
 
 **关键限界：** `--force-with-lease` 的实现可以被某些 GitHub 分支保护规则视为强制推送并拒绝。即使在本地实验中正确、CodeQL 无告警，也不足以证明候选可部署至原项目。严格模式是一个**明确限定条件的研究候选**，不是可以不经审核自动写入任何仓库的生产补丁。
+
+### 自主反证：更强的 CAS 模式本身也可能错误接受无效证据
+
+在第一版 `ref_update_contract.py` 上增加 `tests/test_ref_cas_shell_falsification.py` 的四个负例：
+
+- 把 `git merge-base --is-ancestor` 放进恒假的 `if` 分支；
+- 把 CAS Push 放进恒假的 `if` 分支；
+- 把祖先检查放进 here-document 字面文本；
+- 用 `set +o errexit`（而非以前检测的 `set +e`）取消 Bash 遇错退出。
+
+第一版 **4/4 错误接受**，真实 GitHub CI [4 failed / 316 passed](https://github.com/junlin20011207/test/actions/runs/38149452525)。这不是远端安全漏洞验证，而是我们自己新校验器的反例。
+
+最终校验器要求，在明确支持的修复模板中，祖先检查与原子目标 Push 是**脚本最后两条无条件直线执行命令**，命令顺序、出现次数均必须精确一致；并阻止以上及已知的错误退出掩盖写法。无法支持更复杂的 Shell 分支/管道时明确降级为 `UNVERIFIED`，不签发更强的层级。
+
+最终完整 [320/320 Pytest 通过](https://github.com/junlin20011207/test/actions/runs/38149518900)；
+[历史两层级与修复证明](https://github.com/junlin20011207/test/actions/runs/38149518867)。
+
+### 最终真实 CodeQL 独立复验
+
+为避免使用原先 11 状态扫描的缓存结论，独立增加 `.github/workflows/ref-cas-codeql.yml`，从官方发布地址下载 CodeQL 2.27.2 Actions Bundle，**校验预定义的 SHA-256**，仅对这一份临时增强修复草案重建 Actions 数据库并运行 `actions-security-extended.qls`。
+
+**实测结果：增强调研草案的 17/17 严格必要条件通过；CodeQL 2.27.2 `security-extended` 告警 0 条。** 官方 SARIF 与临时生成的精确 YAML 保存在 CI Artifacts：
+<https://github.com/junlin20011207/test/actions/runs/38149518916>。
+
+不能把 0 条 CodeQL 告警等同于生产可用，因为 `--force-with-lease` 仍可能不满足 GitHub 分支保护、审查和写入权限要求，且完整 Bash 动态语义尚未形式化验证。
 
 ## 创新性和竞争力评估
 
