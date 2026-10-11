@@ -14,7 +14,7 @@ def analyze_fixture(tmp_path, command, *, consumer_step_guard=None,
     d = tmp_path / ".github" / "workflows"
     d.mkdir(parents=True, exist_ok=True)
     producer = {"name": "Producer", "on": [producer_event], "jobs": {
-        "build": {"runs-on": "ubuntu-latest", "steps": [{"run": "echo benign"}]}
+        "build": {"runs-on": "ubuntu-latest", "steps": [{"run":"echo benign"}, {"uses":"actions/upload-artifact@v4","with":{"path":"fixture.txt"}}]}
     }}
     steps = [{"uses": "actions/download-artifact@v4",
               "with": {"run-id": RUN, "github-token": "synthetic-test-token", "path": "./incoming"}},
@@ -81,7 +81,7 @@ def test_execution_step_guard_is_not_executable_under_untrusted_origin(tmp_path)
     d = tmp_path / ".github" / "workflows"
     d.mkdir(parents=True)
     source = {"name":"Producer","on":["pull_request"],
-              "jobs":{"build":{"runs-on":"ubuntu-latest","steps":[{"run":"echo ok"}]}}}
+              "jobs":{"build":{"runs-on":"ubuntu-latest","steps":[{"run":"echo ok"},{"uses":"actions/upload-artifact@v4","with":{"path":"fixture.txt"}}]}}}
     target = {"name":"Consumer","on":{"workflow_run":{"workflows":["Producer"]}},
               "permissions":{"contents":"write"},
               "jobs":{"use":{"runs-on":"ubuntu-latest","steps":[
@@ -203,6 +203,12 @@ def test_distinct_artifact_downloads_have_distinct_witnesses(tmp_path):
     path=tmp_path/".github"/"workflows"/"consumer.yml"
     wf=yaml.safe_load(path.read_text(encoding="utf-8"))
     steps=wf["jobs"]["use"]["steps"]
+    producer_path=tmp_path/".github"/"workflows"/"producer.yml"
+    producer=yaml.safe_load(producer_path.read_text(encoding="utf-8"))
+    producer["jobs"]["build"]["steps"].extend([
+        {"uses":"actions/upload-artifact@v4","with":{"name":"primary-report","path":"primary.txt"}},
+        {"uses":"actions/upload-artifact@v4","with":{"name":"secondary-report","path":"secondary.txt"}}])
+    producer_path.write_text(yaml.safe_dump(producer,sort_keys=False),encoding="utf-8")
     steps[0]["with"]["name"]="primary-report"
     steps.append({"uses":"actions/download-artifact@v4",
                   "with":{"run-id":RUN,"github-token":"synthetic-test-token",
