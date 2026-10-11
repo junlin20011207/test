@@ -61,6 +61,12 @@ def sink_proofs(root="."):
     proofs=[]
     gaps=[]
     for entry in baseline["findings"]+baseline.get("unverified",[]):
+        producer=by_path.get(entry["producer"])
+        if producer is None or not producer["events"].intersection(
+            {"pull_request","pull_request_review"}):
+            gaps.append({"consumer":entry["consumer"],
+                         "reason":"producer fork-modifiable workflow origin not established"})
+            continue
         if entry.get("publisher_status")!="declared":
             gaps.append({"consumer":entry["consumer"],"job":entry["job"],
                          "reason":"publisher not unconditionally declared"})
