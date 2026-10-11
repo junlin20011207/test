@@ -24,7 +24,7 @@ def _matches(steps,name):
                 re.search(r"(?m)^\s*mv\s+.*incoming/dist.*\s+dist\s*$",str(s.get("run","")))]
     if name=="push":
         return [i for i,s in enumerate(steps) if isinstance(s,dict) and
-                re.search(r"(?m)^\s*git\s+push\s+origin\b",str(s.get("run","")))]
+                re.search(r"(?m)^\s*git\s+push\s+(?:--force-with-lease=\S+\s+)?origin\b",str(s.get("run","")))]
     raise ValueError("unknown step kind")
 
 
