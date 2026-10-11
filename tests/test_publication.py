@@ -91,3 +91,27 @@ def test_unknown_third_party_upload_stays_unverified(tmp_path):
     assert not result["findings"]
     assert len(result["unverified"])==1
     assert "unmodeled" in result["unverified"][0]["publisher_reason"]
+
+
+@pytest.mark.parametrize(("suffix","declared"),[
+    ("-n artifact",True),
+    ("--name artifact",True),
+    ("--name=artifact",True),
+    ("-D destination",True),
+    ("-n other",False),
+    ("--name other",False),
+    ("-n artifact -n other",False),
+    ("-n",False),
+    ("--repo unrelated/project",False),
+    ("-R unrelated/project",False),
+])
+def test_cli_artifact_name_selection(tmp_path,suffix,declared):
+    fixture(tmp_path,uploads=[upload()],cli=True)
+    path=tmp_path/".github"/"workflows"/"consumer.yml"
+    consumer=yaml.safe_load(path.read_text(encoding="utf-8"))
+    consumer["jobs"]["use"]["steps"][0]["run"]="gh run download "+RUN+" "+suffix
+    path.write_text(yaml.safe_dump(consumer,sort_keys=False),encoding="utf-8")
+    result=analyze(tmp_path)
+    assert bool(result["findings"]) is declared
+    if not declared:
+        assert result["unverified"] and result["unknowns"]
