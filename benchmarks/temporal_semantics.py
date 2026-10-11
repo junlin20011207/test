@@ -53,7 +53,7 @@ def _if_guard(value):
         return "unverified_or_false"
 
 
-def temporal_contract(steps):
+def temporal_contract(steps,job=None):
     labels=("download","check","checkout","verify","apply","push")
     indices={name:_matches(steps,name) for name in labels}
     unique=all(len(values)==1 for values in indices.values())
@@ -92,8 +92,24 @@ def temporal_contract(steps):
         for name in ("checkout","verify","apply","push"))
     download_safe=download_tolerance=="no" or (
         download_tolerance=="yes" and gated)
+    job=job if isinstance(job,dict) else {}
+    defaults=job.get("defaults") or {}
+    run_defaults=defaults.get("run") or {} if isinstance(defaults,dict) else {}
+    global_dir=str(run_defaults.get("working-directory","")).strip() if isinstance(run_defaults,dict) else "unknown"
+    # This narrow dist repair uses relative git and dist targets inside
+    # the checked-out repository; arbitrary working-directory overrides
+    # require a different behavior contract and cannot be accepted.
+    safe_dir=lambda value: str(value or "").strip() in ("",".","./")
+    step_dirs={name:(str(steps[indices[name][0]].get("working-directory",""))
+                     if unique else "unknown")
+               for name in ("check","verify","apply","push")}
+    execution_context_safe=(
+        _tolerance(job.get("continue-on-error"))=="no"
+        and safe_dir(global_dir)
+        and all(safe_dir(value) for value in step_dirs.values()))
     return {
         "temporal_order_and_dependencies":bool(ordered),
+        "critical_execution_context":bool(execution_context_safe),
         "critical_step_failure_propagation":bool(
             no_skipped and critical_not_tolerated and download_safe),
         "explanation":{
@@ -102,6 +118,9 @@ def temporal_contract(steps):
             "indices":{name:(values[0] if len(values)==1 else None)
                        for name,values in indices.items()},
             "step_conditions":dict(zip(labels,decisions)),
+            "working_directories":step_dirs,
+            "job_default_working_directory":global_dir,
+            "job_failure_propagation":_tolerance(job.get("continue-on-error")),
             "download_continue_on_error":download_tolerance,
             "downstream_gated_if_download_failure_ignored":bool(gated),
             "supported_scope":"six-step known dist workflow; unsupported conditions fail closed",
