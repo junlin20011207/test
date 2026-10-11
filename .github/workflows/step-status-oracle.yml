@@ -1,0 +1,31 @@
+name: ProofCut GitHub Runner Step Outcome Oracle
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  status-semantics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Fail a harmless step with explicit tolerated outcome
+        id: controlled_failure
+        continue-on-error: true
+        run: exit 17
+      - name: Assert actual runtime outcome versus conclusion
+        env:
+          STEP_OUTCOME: ${{ steps.controlled_failure.outcome }}
+          STEP_CONCLUSION: ${{ steps.controlled_failure.conclusion }}
+        run: python -m benchmarks.step_outcome_oracle
+      - name: Archive machine-readable step status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-runner-step-outcome-evidence
+          path: baseline-results/temporal-contract/runner-status.json
+          retention-days: 5
+          if-no-files-found: warn

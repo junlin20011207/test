@@ -9,6 +9,7 @@ import json
 import re
 import yaml
 from benchmarks.contract_semantics import harden
+from benchmarks.temporal_semantics import temporal_contract
 
 RUN="$"+"{{ github.event.workflow_run.id }}"
 TOKEN="$"+"{{ github.token }}"
@@ -92,11 +93,16 @@ def check_dist_contract(producer,consumer):
                     "startsWith(github.event.workflow_run.head_branch" in str(consumer_if)),
     }
     obligations=harden(obligations,producer,consumer,producer_steps,consumer_steps)
-    return {"status":"bounded_semantic_contract_checks",
+    temporal=temporal_contract(consumer_steps,consumer.get("jobs",{}).get("commit",{}))
+    obligations["temporal_order_and_dependencies"]=temporal["temporal_order_and_dependencies"]
+    obligations["critical_step_failure_propagation"]=temporal["critical_step_failure_propagation"]
+    obligations["critical_execution_context"]=temporal["critical_execution_context"]
+    return {"status":"bounded_semantic_and_causal_contract_checks",
             "passed":all(obligations.values()),
             "passed_count":sum(obligations.values()),
             "total_count":len(obligations),
             "checks":obligations,
+            "causal_evidence":temporal["explanation"],
             "limitations":"restricted expression parser and bounded negative scenarios; not exhaustive condition semantics or proof of business behavior"}
 
 
