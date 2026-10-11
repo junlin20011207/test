@@ -185,3 +185,14 @@ def test_gh_cli_run_identity_not_substring(tmp_path,command,recognized):
     assert bool(result["findings"]) == recognized
     if "gh run download" in command and not recognized and command.startswith("gh "):
         assert result["unknowns"]
+
+
+def test_pull_request_review_source_not_assumed_trusted(tmp_path):
+    result=analyze_fixture(tmp_path,"echo harmless",producer_event="pull_request_review")
+    assert len(result["findings"])==1
+    assert "pull_request_review" in result["findings"][0]["witness"][0]
+
+
+def test_benign_workflow_run_no_upstream_is_an_unknown_not_a_risk(tmp_path):
+    result=analyze_fixture(tmp_path,"echo harmless",producer_event="push")
+    assert not result["findings"]
