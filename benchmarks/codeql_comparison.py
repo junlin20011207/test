@@ -63,9 +63,20 @@ def main():
                       "--format=sarif-latest","--output="+str(sarif),
                       "--threads=2","--ram=4096"],case_id+" analyze")
                 report=json.loads(sarif.read_text("utf8"))
-            alerts=[r.get("ruleId","") for run in report.get("runs",[])
-                    for r in run.get("results",[])]
+            result_nodes=[item for run in report.get("runs",[])
+                          for item in run.get("results",[])]
+            alerts=[item.get("ruleId","") for item in result_nodes]
             rules=sorted(set(alerts))
+            diagnostics=[]
+            for node in result_nodes:
+                loc=(node.get("locations") or [{}])[0].get("physicalLocation") or {}
+                reg=loc.get("region") or {}
+                diagnostics.append({
+                    "rule":node.get("ruleId",""),
+                    "message":(node.get("message") or {}).get("text","")[:320],
+                    "source_file":(loc.get("artifactLocation") or {}).get("uri",""),
+                    "line":reg.get("startLine"),
+                })
             row={"case":case_id,"repository":data["source"],
                  "revision":state["commit"],"label":state["label"],
                  "codeql_version":version,"query_pack":PACK,
@@ -75,6 +86,7 @@ def main():
                  "codeql_total_alerts":len(alerts),
                  "codeql_artifact_poisoning_alerts":sum("artifact-poisoning" in a for a in alerts),
                  "codeql_rule_ids":rules,
+                 "codeql_diagnostics":diagnostics,
                  "semantics_note":"Different rule families and path semantics; rule count is not a true/false label"}
             reports.append(row)
             print(json.dumps(row,ensure_ascii=False))
