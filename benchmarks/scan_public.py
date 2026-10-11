@@ -60,7 +60,7 @@ def main():
                 except (OSError,UnicodeError,ValueError) as exc:
                     errors.append({"path":entry["path"],"type":type(exc).__name__,"detail":str(exc)[:240]})
             result=analyze(target) if downloaded else {"findings":[],"guarded":[],"unknowns":["no downloaded workflows"],"workflows":0}
-        report={"repository":repo,"commit":revision,
+        report={"repository":repo,"commit":revision,"stratum":source.get("stratum","unspecified"),
                 "expected_workflows":len(source["files"]),
                 "downloaded":downloaded,"incomplete":bool(errors),
                 "integrity_verified":downloaded,"download_errors":errors,
@@ -68,10 +68,10 @@ def main():
                 "human_labels":"none; do not compute precision or recall"}
         outfile=OUT/(repo.replace("/","__")+".json")
         outfile.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
-        reports.append({"repo":repo,"commit":revision,"expected":len(source["files"]),
+        reports.append({"repo":repo,"commit":revision,"stratum":source.get("stratum","unspecified"),"expected":len(source["files"]),
                         "scanned":downloaded,"findings":len(result["findings"]),
                         "unknowns":len(result["unknowns"]),"fetch_errors":len(errors)})
-        print(f"{repo}@{revision[:12]}: {downloaded}/{len(source['files'])} verified, "
+        print(f"{repo}@{revision[:12]} ({source.get('stratum','unspecified')}): {downloaded}/{len(source['files'])} verified, "
               f"{len(result['findings'])} unlabelled path candidates, "
               f"{len(result['unknowns'])} unknowns, {len(errors)} fetch errors")
     summary={"study":"pinned-public-workflow-corpus","labelled":False,
