@@ -14,6 +14,15 @@
 
 独立 GitHub 研究 PR：[ProofCut #4](https://github.com/junlin20011207/test/pull/4)。
 
+## 第三阶段真实实验（2026-10-11）
+
+- [**第三阶段完整研究报告**](docs/proofcut-phase3.md)：分析现有规则的证据漏洞、CodeQL 强基线竞争关系，以及跨工作流的修复契约和失败中间版本。
+- [**官方 CodeQL 2.27.2 六状态对照**](https://github.com/junlin20011207/test/actions/runs/38139298116)：SPIRE 与 actions/attest 两项已披露安全公告，各包括漏洞旧版、官方修复版和实验性修复草案。两个最终草案均在该查询集下 0 告警，原始受影响版本分别有 1 和 5 条告警；**不代表比 CodeQL 更容易发现这些漏洞**。
+- [**164 项自动化测试**](https://github.com/junlin20011207/test/actions/runs/38139298197)，包含 JS 注释/字符串、Shell 非执行文本、稀疏检出路径、工件元数据来源的对抗性控制。
+- [**真实历史修复/反事实/修复草案/无害 ZIP 实验**](https://github.com/junlin20011207/test/actions/runs/38139298108)：受限草案生成、静态见证重检、限定结构保持性校验和独立文件系统隔离效果实验。**草案不自动部署，不证明运行时业务功能完全保持。**
+
+竞赛创新性限制：GitHub CodeQL 已能识别测试中的漏洞，2026 年 GitHub Agentic Autofix 已公开支持自动补丁与 CodeQL 重扫。因此当前可验证的进展是**特定跨信任边界修复约束与证据可复核性**，并非新漏洞首发或证明检测/修复能力优于成熟工具。
+
 ## 快速复现
 
 ```bash
