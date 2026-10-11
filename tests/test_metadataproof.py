@@ -61,3 +61,14 @@ def test_metadata_control_paths_cut(tmp_path,kwargs):
 def test_untrusted_ref_is_a_data_dependency_not_shell_injection_proof(tmp_path):
     p=fixture(tmp_path)["proofs"][0]
     assert "not verified exploitation" in p["impact"]
+
+
+def test_issue_comment_alone_is_not_evidence_of_attacker_controlled_artifact(tmp_path):
+    fixture(tmp_path)
+    p=tmp_path/".github"/"workflows"/"p.yml"
+    obj=yaml.load(p.read_text("utf8"),Loader=yaml.BaseLoader)
+    obj["on"]=["issue_comment"]
+    p.write_text(yaml.safe_dump(obj,sort_keys=False),encoding="utf8")
+    r=metadata_proofs(tmp_path)
+    assert r["count"]==0
+    assert any("fork-modifiable" in x["reason"] for x in r["gaps"])
