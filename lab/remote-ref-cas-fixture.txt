@@ -1,1 +1,1 @@
-benign remote reference state A1
+benign remote reference state candidate C1
