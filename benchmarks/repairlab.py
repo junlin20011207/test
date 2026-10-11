@@ -66,7 +66,22 @@ def patch_metadata(workspace):
     if checkout.get("with",{}).get("ref")!=old or old not in str(push["run"]):
         raise ValueError("artifact-derived metadata dependency not explicit")
     checkout["with"]["ref"]=trusted
-    push["run"]=str(push["run"]).replace(old,trusted)
+    # GitHub expressions used directly inside Bash can create a distinct
+    # code-injection path even when the chosen branch is authorized. Bind via
+    # environment instead, quote the refspec, and use the event head SHA.
+    push["env"]=dict(push.get("env") or {},HEAD_BRANCH=trusted)
+    old_push="git push origin HEAD:"+old
+    if old_push not in str(push["run"]):
+        raise ValueError("known direct git push ref expression missing")
+    push["run"]=str(push["run"]).replace(
+        old_push,'git push origin "HEAD:refs/heads/$HEAD_BRANCH"')
+    old_head_sha="$"+"{{ steps.check.outputs.head-sha }}"
+    verify=next((s for s in steps if "git rev-parse HEAD" in str(s.get("run",""))),None)
+    if verify is None or old_head_sha not in str(verify["run"]):
+        raise ValueError("untrusted SHA interpolation cannot be safely localized")
+    verify["env"]=dict(verify.get("env") or {},
+                       EXPECTED_SHA="$"+"{{ github.event.workflow_run.head_sha }}")
+    verify["run"]=str(verify["run"]).replace(old_head_sha,"$EXPECTED_SHA")
     old_if=str(job.get("if",""))
     if "github.event.workflow_run" not in old_if:
         raise ValueError("expected upstream-run guard missing")
@@ -79,6 +94,7 @@ def patch_metadata(workspace):
         "target":"trusted workflow_run branch context",
         "ref_and_push_migrated":True,
         "authorization_context_added":True,
+        "branch_and_sha_passed_through_quoted_shell_environment":True,
         "caveat":"stronger origin guard may restrict legitimate use; runtime workflows not executed",
     }
 
