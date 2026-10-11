@@ -61,6 +61,24 @@ GitHub 将 `'' == false`、`'0' == false`、`'1' == true` 判真，`'hello' == t
 
 复现：`python -m benchmarks.contract_codeql_comparison`，须有经过 SHA-256 校验的官方 CodeQL 2.27.2 二进制，且只读 GitHub Raw 下载可用。工作流 `.github/workflows/codeql-compare.yml` 自动执行并保存机器可审查的 `comparison.json` 和各版本 SARIF。
 
+### 三轮修复后的独立六变体 CodeQL 对照结果
+
+[**真实 GitHub CodeQL 2.27.2 同样本扫描运行**](https://github.com/junlin20011207/test/actions/runs/38144366160)：官方 CodeQL Actions `security-extended` 查询集使用固定发布包和 SHA-256 校验，同样本包括历史 actions/attest 修复草案及六个独立临时变体。每例保留原始 SARIF、ContractLab 13 项约束检查和发生变化的源文件。
+
+| 变体 | ContractLab | 失败的契约义务 | CodeQL 总告警 |
+|---|---|---|---:|
+| `control` 无变更草案 | 通过 | 无 | 0 |
+| `producer_renamed` | 拒绝 | 命名发布 / 上下游身份不一致 | 0 |
+| `download_moved` | 拒绝 | 下载隔离目录与后续读取协议不一致 | 0 |
+| `readiness_always_true` | 拒绝 | 业务文件存在性未检查 | 0 |
+| `sha_only_logged` | 拒绝 | HEAD SHA 不再约束当前代码版本 | 0 |
+| `actor_guard_bypass` | 拒绝 | 来源仓库 / 身份 / 分支限制可被绕过 | 0 |
+| `push_failure_ignored` | 拒绝 | Git Push 失败被忽略 | 0 |
+
+**结果：** 在固定、已知的六个被人为破坏的实验性修复版本上，ContractLab 拒绝了 6/6；CodeQL 2.27.2 的 `security-extended` 在这六份文件中报告 0 条告警。这里是“**与漏洞扫描范围互补**”而非“CodeQL 发现 6 个漏洞失败”。业务路径位置或就绪检查错误并非通用漏洞扫描器应理解的用户自定义协议。这个受限定向样本没有独立盲测，不可用 6/6 作为真实世界修复准确率、召回率或竞品优势的估计。
+
+代码与原始数据：`benchmarks/contract_codeql_comparison.py`、`baseline-results/contract-comparison/comparison.json` 及六份 SARIF（GitHub Actions Artifacts 内，按运行的保留期限访问）。比较还不能替代与 GitHub Agentic Autofix 同任务实际执行的性能和人工成本实验。
+
 ## 四、最优竞赛技术定位
 
 建议以 **ProofCut ContractLab：基于平台语义校准的 CI/CD 跨工作流修复契约验证** 为核心，将产出分为：原始安全数据来源与敏感汇点证据、目标平台一致的有限策略证明、生产者/消费者业务协议、真实 GitHub Artifact 运行行为和独立 CodeQL 交叉验收。
