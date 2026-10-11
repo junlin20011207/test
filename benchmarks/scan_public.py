@@ -59,7 +59,7 @@ def main():
                     downloaded+=1
                 except (OSError,UnicodeError,ValueError) as exc:
                     errors.append({"path":entry["path"],"type":type(exc).__name__,"detail":str(exc)[:240]})
-            result=analyze(target) if downloaded else {"findings":[],"guarded":[],"unknowns":["no downloaded workflows"],"workflows":0}
+            result=analyze(target) if downloaded else {"findings":[],"unverified":[],"guarded":[],"unknowns":["no downloaded workflows"],"workflows":0}
             workflows=read(target)[0] if downloaded else []
             run_triggers=sum("workflow_run" in wf["events"] for wf in workflows)
         report={"repository":repo,"commit":revision,"stratum":source.get("stratum","unspecified"),
@@ -72,15 +72,18 @@ def main():
         outfile.write_text(json.dumps(report,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
         reports.append({"repo":repo,"commit":revision,"stratum":source.get("stratum","unspecified"),"expected":len(source["files"]),
                         "scanned":downloaded,"workflow_run_triggers":run_triggers,"findings":len(result["findings"]),
+                        "unverified":len(result.get("unverified",[])),
                         "unknowns":len(result["unknowns"]),"fetch_errors":len(errors)})
-        for finding in result["findings"][:25]:
-            producer=Path(finding["producer"]).name
-            consumer=Path(finding["consumer"]).name
-            print(f"  UNLABELLED {finding['severity']}: {producer} -> {consumer}, job={finding['job']}, "
-                  f"step={finding.get('download_step')}, artifact={finding.get('artifact_name')}; "
-                  f"witness={finding['witness'][-2:]}")
+        for group,label in ((result["findings"],"DECLARED"),(result.get("unverified",[]),"UNVERIFIED")):
+            for finding in group[:25]:
+                producer=Path(finding["producer"]).name
+                consumer=Path(finding["consumer"]).name
+                print(f"  {label} static candidate: {producer} -> {consumer}, job={finding['job']}, "
+                      f"step={finding.get('download_step')}, artifact={finding.get('artifact_name')}, "
+                      f"publisher={finding.get('publisher_status')}; reason={finding.get('publisher_reason')}")
         print(f"{repo}@{revision[:12]} ({source.get('stratum','unspecified')}): {downloaded}/{len(source['files'])} verified, "
-              f"workflow_run_triggers={run_triggers}, {len(result['findings'])} unlabelled path candidates, "
+              f"workflow_run_triggers={run_triggers}, {len(result['findings'])} declared paths, "
+              f"{len(result.get('unverified',[]))} unverified transfer candidates, "
               f"{len(result['unknowns'])} unknowns, {len(errors)} fetch errors")
     summary={"study":"pinned-public-workflow-corpus","labelled":False,
              "repositories":reports,"complete":all(x["fetch_errors"]==0 for x in reports),
