@@ -21,7 +21,7 @@ def make(tmp_path, event="pull_request", guard="", permission="write", remote=Tr
 def test_untrusted_event(tmp_path,event):
     r=make(tmp_path,event=event)
     assert len(r["findings"])==1
-    assert r["findings"][0]["severity"]=="critical"
+    assert r["findings"][0]["severity"]=="high"
 
 
 @pytest.mark.parametrize("event",["push","schedule","workflow_dispatch"])
@@ -65,3 +65,28 @@ def test_invalid_yaml_not_silent(tmp_path):
     folder=tmp_path/".github/workflows";folder.mkdir(parents=True)
     (folder/"bad.yml").write_text("jobs: [")
     assert analyze(tmp_path)["unknowns"]
+
+
+def test_explicit_download_directory_script_execution(tmp_path):
+    folder=tmp_path/".github"/"workflows"
+    folder.mkdir(parents=True)
+    (folder/"producer.yml").write_text(
+        "name: Producer\\non: [pull_request]\\njobs: {build: {runs-on: ubuntu-latest}}\\n")
+    (folder/"consumer.yml").write_text(
+        "name: Consumer\\non:\\n  workflow_run:\\n    workflows: [Producer]\\n"
+        "permissions: {contents: write}\\njobs:\\n  deploy:\\n"
+        "    runs-on: ubuntu-latest\\n    steps:\\n"
+        "      - uses: actions/download-artifact@v4\\n"
+        "        with:\\n          github-token: token\\n"
+        "          run-id: ${{ github.event.workflow_run.id }}\\n"
+        "          path: ./incoming\\n"
+        "      - run: bash ./incoming/entry.sh\\n")
+    result=analyze(tmp_path)
+    assert len(result["findings"])==1
+    assert result["findings"][0]["severity"]=="critical"
+
+
+def test_unrelated_script_not_attributed_to_artifact(tmp_path):
+    result=make(tmp_path,execute=True)
+    assert result["findings"][0]["severity"]=="high"
+    assert "not established" in result["findings"][0]["witness"][-1]
