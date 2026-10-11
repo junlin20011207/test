@@ -69,3 +69,25 @@ def test_ref_cas_pattern_rejects_mutation(fault):
         raise AssertionError("unknown fault")
     result=inspect_push_step(push,job)
     assert not result["stronger_pattern_passed"],(fault,result)
+
+
+
+def test_plain_legacy_contract_passes_baseline_but_fails_strict_ref_integrity():
+    from benchmarks.repair_invariants import check_dist_contract
+    producer,consumer=prepared()
+    baseline=check_dist_contract(producer,consumer)
+    strong=check_dist_contract(producer,consumer,require_ref_cas=True)
+    assert baseline["passed"] and baseline["total_count"]==16
+    assert not strong["passed"] and strong["total_count"]==17
+    assert strong["checks"]["remote_ref_expected_oid_cas"] is False
+    assert baseline["claim_scope"].endswith("without_atomic_ref_guarantee")
+
+
+def test_opt_in_cas_17th_obligation_changes_assurance_tier_without_dropping_old_guards():
+    from benchmarks.repair_invariants import check_dist_contract
+    producer,consumer=prepared()
+    upgrade_push_to_expected_ref_cas(consumer)
+    strong=check_dist_contract(producer,consumer,require_ref_cas=True)
+    assert strong["passed"] and strong["total_count"]==17
+    assert all(strong["checks"].values())
+    assert strong["ref_update_assurance"]["tier"]=="expected_ref_cas_pattern"
