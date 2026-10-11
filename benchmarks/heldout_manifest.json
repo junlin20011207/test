@@ -1,0 +1,529 @@
+{
+  "schema_version": 1,
+  "study": "holdout-oss-security-tools",
+  "selected_on": "2026-10-11",
+  "selection": "five developer/security tooling repos selected before inspecting workflow content or scanner outputs; complete top-level workflow YAML at exact pinned revision",
+  "human_labels": "none; do not estimate precision or recall",
+  "repositories": [
+    {
+      "name": "sigstore/cosign",
+      "commit": "e2d25b54f768bdaa868318651e453b7bbc53c0ce",
+      "files": [
+        {
+          "path": ".github/workflows/build.yaml",
+          "sha": "5b8de8655e7e12b22922d8f7cb70d45fc5140ff3",
+          "size": 2697
+        },
+        {
+          "path": ".github/workflows/codeql-analysis.yml",
+          "sha": "c3da6a4c9f59e33674a447d3fe855428f6b242a5",
+          "size": 2327
+        },
+        {
+          "path": ".github/workflows/conformance-nightly.yml",
+          "sha": "d30bd8e23881e5b2c2d83e8af64d12ea64118367",
+          "size": 2848
+        },
+        {
+          "path": ".github/workflows/conformance.yml",
+          "sha": "abd44ba8f8643f915638d9f1a1c7580514baf471",
+          "size": 1585
+        },
+        {
+          "path": ".github/workflows/cut-release.yml",
+          "sha": "57e83b80061ff5a14c8ad153773bddc1b1438fb4",
+          "size": 1576
+        },
+        {
+          "path": ".github/workflows/depsreview.yml",
+          "sha": "e133c695b6279bfae2331f55bd21ebf4718e3197",
+          "size": 889
+        },
+        {
+          "path": ".github/workflows/donotsubmit.yaml",
+          "sha": "26175caf86e05c98fbea2e87ef63e5ce41b3745e",
+          "size": 1156
+        },
+        {
+          "path": ".github/workflows/e2e-tests.yml",
+          "sha": "3ee5d301abb7714900f09f4dc776fd6d18ac4580",
+          "size": 8728
+        },
+        {
+          "path": ".github/workflows/e2e-with-binary.yml",
+          "sha": "1031ae951bf028d0f32a9faae4654bc5833bb71e",
+          "size": 2171
+        },
+        {
+          "path": ".github/workflows/github-oidc.yaml",
+          "sha": "f642cb0e502ba4758c567b7f0d1e1b74ef339069",
+          "size": 2125
+        },
+        {
+          "path": ".github/workflows/golangci-lint.yml",
+          "sha": "ac919e897bd5ed3529a2d3a7ec31be8942351b1e",
+          "size": 2835
+        },
+        {
+          "path": ".github/workflows/kind-verify-attestation.yaml",
+          "sha": "a6cb39ce8a13690243abc9be17ae12d0451d8057",
+          "size": 8873
+        },
+        {
+          "path": ".github/workflows/scorecard-action.yml",
+          "sha": "ffe75bd80fa36cb39ba62ca38955c8518c0f2f84",
+          "size": 2663
+        },
+        {
+          "path": ".github/workflows/tests.yaml",
+          "sha": "f4f8e44ced4853f160408387476be7840800dcbd",
+          "size": 10536
+        },
+        {
+          "path": ".github/workflows/validate-release.yml",
+          "sha": "f051e3df5abb08d539ed2c4263e55e4420516f55",
+          "size": 3788
+        },
+        {
+          "path": ".github/workflows/verify-docgen.yaml",
+          "sha": "765b7058ee16e7a9123c9f5108547a9b8ceda129",
+          "size": 1441
+        },
+        {
+          "path": ".github/workflows/whitespace.yaml",
+          "sha": "29642d7946b1b6b73a2b7ea455ae7cd20db9c1dc",
+          "size": 1241
+        }
+      ],
+      "stratum": "independent-20261011-heldout"
+    },
+    {
+      "name": "anchore/syft",
+      "commit": "33419c8f397e8e3ec1df9570c10c320a67fd2bc5",
+      "files": [
+        {
+          "path": ".github/workflows/codeql.yaml",
+          "sha": "022c2b9cb993aa5afece525253f153eceacb1df2",
+          "size": 401
+        },
+        {
+          "path": ".github/workflows/release.yaml",
+          "sha": "704e444c3d31bbb8831863d0a629d2ed08eee3f1",
+          "size": 6737
+        },
+        {
+          "path": ".github/workflows/validate-github-actions.yaml",
+          "sha": "52f427ff10b4348fc9122a526458d6cff9197b6a",
+          "size": 819
+        },
+        {
+          "path": ".github/workflows/validations.yaml",
+          "sha": "d576ae79249d16ce5c7e037b9ab346526b31a3cf",
+          "size": 12940
+        }
+      ],
+      "stratum": "independent-20261011-heldout"
+    },
+    {
+      "name": "google/osv-scanner",
+      "commit": "85c61eee3bcccbf489da94c1c5f55c96f5b41e3d",
+      "files": [
+        {
+          "path": ".github/workflows/cassettes.yml",
+          "sha": "93bd45f1b4149f898d5768bf241dfeafc88ca2ec",
+          "size": 1630
+        },
+        {
+          "path": ".github/workflows/checks.yml",
+          "sha": "cdbd5ce410386581203d2847b0c8781b378bccff",
+          "size": 3353
+        },
+        {
+          "path": ".github/workflows/codeql-analysis.yml",
+          "sha": "c63830f9a54a42002e41484db3bbf763b1ce2b0e",
+          "size": 2945
+        },
+        {
+          "path": ".github/workflows/dependencies.yml",
+          "sha": "2d7a537e8a79c2e4a3f901a7f26e2e727a305103",
+          "size": 2020
+        },
+        {
+          "path": ".github/workflows/docs-deploy.yml",
+          "sha": "acbe5889e6a1bc036c7be09df3817becfd61ca7e",
+          "size": 2283
+        },
+        {
+          "path": ".github/workflows/goreleaser-nightly.yml",
+          "sha": "b93d4a11d6757640d6c5bf15dc50590c68aebc47",
+          "size": 2038
+        },
+        {
+          "path": ".github/workflows/goreleaser.yml",
+          "sha": "f6238b0df7f77e12cbdd84402a0dad77ac6a3195",
+          "size": 3275
+        },
+        {
+          "path": ".github/workflows/links.yml",
+          "sha": "5779ccaebd77198146cf5b4df736e9ab0e4f607e",
+          "size": 854
+        },
+        {
+          "path": ".github/workflows/osv-scanner-reusable-pr.yml",
+          "sha": "636b45f9380d87fdd9db34d0bc1a6d5a6fe9d8d5",
+          "size": 2022
+        },
+        {
+          "path": ".github/workflows/osv-scanner-reusable.yml",
+          "sha": "f709a5989d61f7fcd5b2ddc357cdca994e1bf5c1",
+          "size": 2176
+        },
+        {
+          "path": ".github/workflows/osv-scanner-unified-action.yml",
+          "sha": "bca52d66b726db93047af2e4b31063fc590d25d6",
+          "size": 1847
+        },
+        {
+          "path": ".github/workflows/prerelease-check.yml",
+          "sha": "a03bc07570188b8830478f952eb505aadd01650d",
+          "size": 6288
+        },
+        {
+          "path": ".github/workflows/renovate-validator.yml",
+          "sha": "2344a3e53487cf3e183b6d2a607055349f60b954",
+          "size": 914
+        },
+        {
+          "path": ".github/workflows/scorecards.yml",
+          "sha": "c5f401e8ffd9bfbe536b56debf0b52c55738a1be",
+          "size": 3093
+        },
+        {
+          "path": ".github/workflows/snapshots.yml",
+          "sha": "58d4ddfadf5dbbd3856cc07b5580c5da8bd80c13",
+          "size": 1641
+        },
+        {
+          "path": ".github/workflows/staleness.yml",
+          "sha": "54ed8283e1dc3cac15af68c45e93c9dd51d3ac94",
+          "size": 1326
+        },
+        {
+          "path": ".github/workflows/tests.yml",
+          "sha": "18b237718430750b56c8114f21cc82dfe03df6a0",
+          "size": 6700
+        },
+        {
+          "path": ".github/workflows/title.yml",
+          "sha": "c5f9f02e0d5486e8785853eead90e247b62810bd",
+          "size": 994
+        },
+        {
+          "path": ".github/workflows/zizmor.yml",
+          "sha": "849f37a596d47d0624657ba729d4bae8e4635d40",
+          "size": 640
+        }
+      ],
+      "stratum": "independent-20261011-heldout"
+    },
+    {
+      "name": "astral-sh/uv",
+      "commit": "5cc7f15c359b83eed2c68c5578c1000bfd27e0da",
+      "files": [
+        {
+          "path": ".github/workflows/bench.yml",
+          "sha": "e9319870b63b9cb3d0daf3a28e1ae5c73ea86996",
+          "size": 8504
+        },
+        {
+          "path": ".github/workflows/build-dev-binaries.yml",
+          "sha": "b5c28c68086a5efcda128cdd8e7976c04d557c85",
+          "size": 16930
+        },
+        {
+          "path": ".github/workflows/build-docker.yml",
+          "sha": "9d292c1955947ab83d39ffa155a965ef7976c0b4",
+          "size": 18551
+        },
+        {
+          "path": ".github/workflows/build-release-binaries.yml",
+          "sha": "6e2dfeab86e81cfaefbcf7ecf46c2da91e583cde",
+          "size": 60272
+        },
+        {
+          "path": ".github/workflows/check-crates-policies.yml",
+          "sha": "37e7da9a0939a383512d78bae428c8dc7d0f21ea",
+          "size": 2732
+        },
+        {
+          "path": ".github/workflows/check-docs.yml",
+          "sha": "524fb719aaa234f63aba8f5b3fc33b91d0a14231",
+          "size": 1355
+        },
+        {
+          "path": ".github/workflows/check-fmt.yml",
+          "sha": "c8454645341589e5f3752498fba65508d396d9e1",
+          "size": 1480
+        },
+        {
+          "path": ".github/workflows/check-generated-files.yml",
+          "sha": "f64e2567ed02c44f50fc01f50bf5653b9cc6d8ef",
+          "size": 1791
+        },
+        {
+          "path": ".github/workflows/check-lint.yml",
+          "sha": "967b31ea79121b5bc620644928cc466c47d3f359",
+          "size": 10034
+        },
+        {
+          "path": ".github/workflows/check-lock.yml",
+          "sha": "d24ee805893f25033efab948a1c3711b2ebc429c",
+          "size": 793
+        },
+        {
+          "path": ".github/workflows/check-publish.yml",
+          "sha": "e7587e58b33d1013c32892c477dc2f82fe8ccd40",
+          "size": 680
+        },
+        {
+          "path": ".github/workflows/check-release.yml",
+          "sha": "6154653b2fc2c6015d1581e9c94bd7cf9020a213",
+          "size": 1002
+        },
+        {
+          "path": ".github/workflows/check-zizmor.yml",
+          "sha": "02fbb61ab037e0dfc145cd65c3e1004b9b7a412f",
+          "size": 588
+        },
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha": "b53e57a50cf3f4996e6956caff1c9ccf0fcc9de6",
+          "size": 13263
+        },
+        {
+          "path": ".github/workflows/diagnose-workflow-failure.yml",
+          "sha": "a5353098bebf801d8f975ad25bac277a72ad551e",
+          "size": 13575
+        },
+        {
+          "path": ".github/workflows/fix-bug.yml",
+          "sha": "e4a3f8a4778ef53d44961f9699b4d72c3f8c69a7",
+          "size": 34429
+        },
+        {
+          "path": ".github/workflows/import-codspeed-profiles.yml",
+          "sha": "ad517437b5cbaea8f06a22cc65bd03db86b0abcd",
+          "size": 2791
+        },
+        {
+          "path": ".github/workflows/issue-triage.yml",
+          "sha": "7eea05ba385122b204afa3941d1696a0e61d6ac9",
+          "size": 10955
+        },
+        {
+          "path": ".github/workflows/plan.yml",
+          "sha": "e78ec580b0791b0177ad57bbd935d1ad6406e347",
+          "size": 17770
+        },
+        {
+          "path": ".github/workflows/promote-pull-request.yml",
+          "sha": "0a0764ad2cc9c05d8a4f9e5b1e6c3367c2a0f2d5",
+          "size": 46884
+        },
+        {
+          "path": ".github/workflows/publish-crates.yml",
+          "sha": "4a22c3baa51ced9983fa558b7dbd48d11b899c3b",
+          "size": 1580
+        },
+        {
+          "path": ".github/workflows/publish-docker-image.yml",
+          "sha": "6351433ef9283d2c1523e239e4c468e1c05ded31",
+          "size": 8025
+        },
+        {
+          "path": ".github/workflows/publish-docker.yml",
+          "sha": "5a40b8143f01602893ead9511a55c07e4a25d104",
+          "size": 2116
+        },
+        {
+          "path": ".github/workflows/publish-docs.yml",
+          "sha": "074fa22490acc58798213c9143848cbd9b65352f",
+          "size": 5631
+        },
+        {
+          "path": ".github/workflows/publish-mirror.yml",
+          "sha": "28eec0916917847416dd7434b48153710a423714",
+          "size": 2622
+        },
+        {
+          "path": ".github/workflows/publish-pypi.yml",
+          "sha": "56212dd038331a869f091b34fe3a5dc60a68ba5c",
+          "size": 2801
+        },
+        {
+          "path": ".github/workflows/publish-versions.yml",
+          "sha": "747406e9b1a2eab31096feaaa1dffd3ea34f2ccd",
+          "size": 3686
+        },
+        {
+          "path": ".github/workflows/pull-request-code-quality-review.yml",
+          "sha": "61b6985c1d2fccf9625299d4ba299f8ccd5138de",
+          "size": 7289
+        },
+        {
+          "path": ".github/workflows/pull-request-conflicts.yml",
+          "sha": "fc011090347c0d93d081c619852866d65a0a5d75",
+          "size": 7326
+        },
+        {
+          "path": ".github/workflows/pull-request-labels.yml",
+          "sha": "7e7518426a549a7a51e68f5a5d53234da604cc88",
+          "size": 6203
+        },
+        {
+          "path": ".github/workflows/rebase-conflicted-pull-request.yml",
+          "sha": "3a0017d57295bce6ed2469078c696bb7898a1a40",
+          "size": 8824
+        },
+        {
+          "path": ".github/workflows/release-prepare.yml",
+          "sha": "f712d87637da0bf163439d398ac9d9eb89de6c1f",
+          "size": 4717
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "sha": "37fe7d92da55ad8dd59fe897bbf7388430dce6a9",
+          "size": 20003
+        },
+        {
+          "path": ".github/workflows/reproduce-bug.yml",
+          "sha": "7c36c56c4cc92ba2317b05b9b8a74c6c4d083761",
+          "size": 19761
+        },
+        {
+          "path": ".github/workflows/sign-release-binaries.yml",
+          "sha": "7eb1490dc6013b7916150b7a7ce00f0306c82055",
+          "size": 18485
+        },
+        {
+          "path": ".github/workflows/sync-python-releases.yml",
+          "sha": "a5c7f5b2d27819819a8783aabc61e3fa6d203850",
+          "size": 3092
+        },
+        {
+          "path": ".github/workflows/sync-uv-dev.yml",
+          "sha": "b622db8a9c69c545360d89d5bc60d26a17e2989d",
+          "size": 1179
+        },
+        {
+          "path": ".github/workflows/sync-uv-security.yml",
+          "sha": "ea49a8dc2bf6d01a4e6b2546a293e9fdd22696c9",
+          "size": 4265
+        },
+        {
+          "path": ".github/workflows/test-ecosystem.yml",
+          "sha": "e8b0acc0877ca108d17308616599cdeca91fd0d2",
+          "size": 2070
+        },
+        {
+          "path": ".github/workflows/test-integration.yml",
+          "sha": "8c2c9672712ef9b5c483a1b298f9203d67415b19",
+          "size": 45804
+        },
+        {
+          "path": ".github/workflows/test-smoke.yml",
+          "sha": "789a1a1bf0c9f719341234cb9f6bba8133f5f43b",
+          "size": 5541
+        },
+        {
+          "path": ".github/workflows/test-system.yml",
+          "sha": "f58ef1da379b096656c7f5d61e8eea7c6b1e3367",
+          "size": 29959
+        },
+        {
+          "path": ".github/workflows/test-windows-trampolines.yml",
+          "sha": "4cb3df8998ffc5fd611c73fbd33dc3677b5c4c6f",
+          "size": 7309
+        },
+        {
+          "path": ".github/workflows/test.yml",
+          "sha": "f423205e3393a039cecbd49ea98dac9a4134a4a3",
+          "size": 14553
+        },
+        {
+          "path": ".github/workflows/update-issue-context.yml",
+          "sha": "9fc0c7027d704d00a3ef82600addedf56aff818d",
+          "size": 12240
+        },
+        {
+          "path": ".github/workflows/update-pull-request-parent.yml",
+          "sha": "dc7473a96f516de9e9625bf605df189f8bea7c57",
+          "size": 5255
+        }
+      ],
+      "stratum": "independent-20261011-heldout"
+    },
+    {
+      "name": "opentofu/opentofu",
+      "commit": "52ade2f770d7b375798023db67db0b8d56653838",
+      "files": [
+        {
+          "path": ".github/workflows/build.yml",
+          "sha": "949cda1a5e542539527a36f2d267e53538da1e96",
+          "size": 2657
+        },
+        {
+          "path": ".github/workflows/checks.yml",
+          "sha": "9f025e8ce003e2c95a4019d65788627a77870c3f",
+          "size": 8333
+        },
+        {
+          "path": ".github/workflows/compare-snapshots.yml",
+          "sha": "1ef064bbf8a87e3d99bf0dd297abcc1042f6af32",
+          "size": 2488
+        },
+        {
+          "path": ".github/workflows/experimental-engine.yml",
+          "sha": "05dedd21ad295169b0871a1d5fbe82aaaaa312eb",
+          "size": 1383
+        },
+        {
+          "path": ".github/workflows/govulncheck.yml",
+          "sha": "e2ec885dbd1a20d04fcdc2150b6bf9a21f4109e3",
+          "size": 3767
+        },
+        {
+          "path": ".github/workflows/nightly.yml",
+          "sha": "917fc801333a403b5c98634f52ed32c078d56f31",
+          "size": 3997
+        },
+        {
+          "path": ".github/workflows/post-release.yml",
+          "sha": "f1b978637ecee0aa56340ca5c6817facbd937c68",
+          "size": 346
+        },
+        {
+          "path": ".github/workflows/pr-opened.yml",
+          "sha": "faa88ad3b2b6f262696f37778a7d35e4f03ce45e",
+          "size": 662
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "sha": "321a3c762f64b262d181cbaca99ec4bbf90ea163",
+          "size": 6270
+        },
+        {
+          "path": ".github/workflows/update-top-issues-ranking.yml",
+          "sha": "5cc2d3fb597f1150052ea55ad8506fbd54be835a",
+          "size": 726
+        },
+        {
+          "path": ".github/workflows/website.yml",
+          "sha": "25cc9c737af9fa130961c016ca2edbc4c99c6570",
+          "size": 2909
+        }
+      ],
+      "stratum": "independent-20261011-heldout"
+    }
+  ]
+}
