@@ -9,6 +9,7 @@ import sys
 import yaml
 
 ROOT=Path(__file__).resolve().parents[1]
+sys.path.insert(0,str(ROOT))
 sys.path.insert(0,str(ROOT/"tests"))
 
 from benchmarks.guard_semantics import parse,guaranteed_atoms
