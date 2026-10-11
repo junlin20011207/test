@@ -5,7 +5,7 @@ from boundarygraph import analyze
 def make(tmp_path, event="pull_request", guard="", permission="write", remote=True, execute=True):
     folder=tmp_path/".github"/"workflows"
     folder.mkdir(parents=True)
-    (folder/"a.yml").write_text("name: Producer\non: ["+event+"]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo harmless\n")
+    (folder/"a.yml").write_text("name: Producer\non: ["+event+"]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo harmless\n      - uses: actions/upload-artifact@v4\n        with: {path: fixture.txt}\n")
     upstream=chr(36)+"{{ github.event.workflow_run.id }}"
     source=("        with:\n          github-token: test-token\n          run-id: "+upstream+"\n") if remote else ""
     gated=("    if: >-\n      "+guard+"\n") if guard else ""
@@ -71,7 +71,7 @@ def test_explicit_download_directory_script_execution(tmp_path):
     folder=tmp_path/".github"/"workflows"
     folder.mkdir(parents=True)
     (folder/"producer.yml").write_text(
-        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
+        "name: Producer\non: [pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/upload-artifact@v4\n        with: {path: fixture.txt}\n")
     (folder/"consumer.yml").write_text(
         "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
         "permissions: {contents: write}\njobs:\n  deploy:\n"
@@ -112,7 +112,7 @@ def test_second_shell_command_under_download_path(tmp_path):
     folder=tmp_path/".github"/"workflows"
     folder.mkdir(parents=True)
     (folder/"a.yml").write_text(
-        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
+        "name: Producer\non: [pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/upload-artifact@v4\n        with: {path: fixture.txt}\n")
     (folder/"b.yml").write_text(
         "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
         "permissions: {contents: write}\njobs:\n  deploy:\n"
@@ -129,7 +129,7 @@ def test_download_step_push_guard_cuts_transfer(tmp_path):
     folder=tmp_path/".github"/"workflows"
     folder.mkdir(parents=True)
     (folder/"a.yml").write_text(
-        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
+        "name: Producer\non: [pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/upload-artifact@v4\n        with: {path: fixture.txt}\n")
     (folder/"b.yml").write_text(
         "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
         "permissions: {contents: write}\njobs:\n  deploy:\n"
@@ -149,7 +149,7 @@ def test_download_step_ambiguous_guard_does_not_cut(tmp_path):
     folder=tmp_path/".github"/"workflows"
     folder.mkdir(parents=True)
     (folder/"a.yml").write_text(
-        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
+        "name: Producer\non: [pull_request]\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/upload-artifact@v4\n        with: {path: fixture.txt}\n")
     (folder/"b.yml").write_text(
         "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
         "permissions: {contents: write}\njobs:\n  deploy:\n"
