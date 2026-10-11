@@ -176,11 +176,16 @@ def publication_match(producer, download_step):
     requested=str(params.get("name","")).strip()
     pattern=str(params.get("pattern","")).strip()
     action=str(download_step.get("uses","")).lower()
-    if action=="shell" and gh_download_source(shell_commands(download_step.get("run",""))[0]) is True:
-        # gh run download RUN_ID without a name downloads all artifacts.
-        return ("declared" if named else "unresolved"),sorted(named),(
-            "upstream upload declared; runtime success not proven" if named else
-            "no upstream artifact publication observed")
+    if action=="shell":
+        commands=shell_commands(download_step.get("run",""))
+        if commands and any(gh_download_source(t) is True for t in commands):
+            # With an explicit run ID and no -n, the CLI downloads all artifacts.
+            status=("conditional" if any(x["conditional"] for group in named.values() for x in group)
+                    else "declared") if named else "unresolved"
+            return status,sorted(named),(
+                "upstream upload declared; runtime success not proven" if named else
+                "no upstream artifact publication observed")
+        return "unresolved",[],"CLI artifact selector not resolved"
     if not re.fullmatch(r"actions/download-artifact@[^\s]+",action):
         return "unresolved",[],"download selector semantics not modeled"
     if (chr(36)+"{{" in requested or chr(36)+"{{" in pattern or
