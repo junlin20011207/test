@@ -67,8 +67,10 @@ jobs:
         with:
           name: proofcut-overlay-fixture
           path: ${{ runner.temp }}/proofcut-artifact
-      - name: Validate isolation and business data preservation
-        run: python benchmarks/artifact_runtime_contract.py isolated --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+      - name: Validate isolation and business JSON via Python and Node.js
+        run: |
+          python benchmarks/artifact_runtime_contract.py isolated --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+          node -e 'const fs = require("fs"), path = require("path"); const p = path.join(process.env.RUNNER_TEMP, "proofcut-artifact", "review.json"); const x = JSON.parse(fs.readFileSync(p, "utf8")); if(x.unit !== "artifact-contract" || x.number !== 42) process.exit(2); console.log("Node.js isolated business data reader: PASSED")'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -92,6 +94,7 @@ jobs:
         run: |
           python benchmarks/artifact_runtime_contract.py dist --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
           python benchmarks/artifact_runtime_contract.py negative --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+          python benchmarks/local_git_contract.py --dist "$RUNNER_TEMP/incoming/dist"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
