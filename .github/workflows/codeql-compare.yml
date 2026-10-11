@@ -7,7 +7,7 @@ permissions:
 jobs:
   codeql-equal-sample:
     runs-on: ubuntu-latest
-    timeout-minutes: 24
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -40,11 +40,15 @@ jobs:
           "$CODEQL_BIN" version
       - name: Pinned historical and two draft-patch scans
         run: python benchmarks/codeql_comparison.py
+      - name: Compare repaired pipeline against six independent business-contract mutations
+        run: python -m benchmarks.contract_codeql_comparison
       - name: Upload source-verifiable result and SARIF
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: proofcut-codeql-pinned-six-state-comparison
-          path: baseline-results/codeql/
+          path: |
+            baseline-results/codeql/
+            baseline-results/contract-comparison/
           retention-days: 14
           if-no-files-found: warn

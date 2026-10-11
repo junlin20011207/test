@@ -1,0 +1,47 @@
+name: ProofCut GitHub Expression Differential Oracle
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  expression-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compare actual expression engine and local restricted model
+        env:
+          GH_EQ: ${{ 'MAIN' == 'main' }}
+          GH_NE: ${{ 'MAIN' != 'main' }}
+          GH_START: ${{ startsWith('Dependabot/npm', 'dependabot/') }}
+          GH_QUOTED: ${{ 'It''s safe' == 'it''s SAFE' }}
+          GH_FALSE: ${{ startsWith('Release', 'dependabot/') }}
+          GH_COMBINED: ${{ 'main' == 'MAIN' && !startsWith('RELEASE','dependabot/') }}
+          GH_COERCE_EMPTY: ${{ '' == false }}
+          GH_COERCE_ZERO: ${{ '0' == false }}
+          GH_COERCE_ONE: ${{ '1' == true }}
+          GH_COERCE_NAN: ${{ 'hello' == true }}
+          GH_START_TRUE: ${{ startsWith(true, 't') }}
+          GH_START_FALSE: ${{ startsWith(false, 'f') }}
+        run: python -m benchmarks.github_expression_oracle
+      - name: Compare operand-valued GitHub expressions
+        env:
+          GH_AND: ${{ 'hit' && 'value' }}
+          GH_OR: ${{ '' || 'fallback' }}
+          GH_OR_KEEP: ${{ 'already' || 'fallback' }}
+          GH_FALSE_OR: ${{ false || 'lowercase' }}
+          GH_TRUE_AND: ${{ true && 'kept' }}
+          GH_FALSE_AND: ${{ false && 'unreachable' }}
+          GH_NESTED: ${{ startsWith('x' && 'Dependabot/pkg','dependabot/') }}
+        run: python -m benchmarks.github_value_oracle
+      - name: Save official evaluator comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expression-oracle-results
+          path: baseline-results/expression-oracle/
+          if-no-files-found: warn
+          retention-days: 5

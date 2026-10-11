@@ -4,8 +4,10 @@ Not GitHub's complete expression language. Unsupported symbols or functions
 remain unknown and are never accepted as authorization evidence.
 """
 import re
+import json
+import math
 
-TOKEN=re.compile(r"""\s*(?:(&&|\|\||==|!=|[(),!])|('(?:\\.|[^'\\])*'|"(?:\\.|[^"\\])*")|([a-zA-Z_][\w.]*))""")
+TOKEN=re.compile(r"""\s*(?:(&&|\|\||==|!=|[(),!])|('(?:''|[^'])*'|"(?:\\.|[^"\\])*")|([a-zA-Z_][\w.]*))""")
 
 
 def tokenize(source):
@@ -58,7 +60,7 @@ def parse(source):
                 raise ValueError("GitHub expression string must use single quotes")
             if len(token)<2 or token[-1]!=token[0]:
                 raise ValueError("invalid literal")
-            return ("literal",token[1:-1])
+            return ("literal",token[1:-1].replace("''","'"))
         if token and re.fullmatch(r"[a-zA-Z_][\w.]*",token):
             take()
             if peek()=="(":
@@ -101,6 +103,40 @@ def parse(source):
     return result
 
 
+def _numeric_for_loose_equality(value):
+    """GitHub mixed Boolean/string equality: JSON numeric strings or NaN."""
+    if isinstance(value,bool):
+        return int(value)
+    if isinstance(value,str):
+        if not value:
+            return 0
+        try:
+            parsed=json.loads(value)
+        except (ValueError,TypeError):
+            return math.nan
+        if isinstance(parsed,(int,float)) and not isinstance(parsed,bool):
+            return parsed
+        return math.nan
+    raise ValueError("unsupported loose comparison value type")
+
+
+def _string_for_prefix(value):
+    if isinstance(value,bool):
+        return "true" if value else "false"
+    if isinstance(value,str):
+        return value
+    raise ValueError("unmodeled startsWith coercion")
+
+
+def _truthy(value):
+    """Subset of GitHub truthiness: documented Boolean and string values."""
+    if isinstance(value,bool):
+        return value
+    if isinstance(value,str):
+        return len(value)>0
+    raise ValueError("unmodeled expression value type")
+
+
 def evaluate(tree,values):
     kind=tree[0]
     if kind in ("bool","literal"):
@@ -112,19 +148,27 @@ def evaluate(tree,values):
     if kind=="startsWith":
         left=evaluate(tree[1],values)
         right=evaluate(tree[2],values)
-        if not isinstance(left,str) or not isinstance(right,str):
-            raise ValueError("startsWith expects strings")
-        return left.startswith(right)
+        left=_string_for_prefix(left)
+        right=_string_for_prefix(right)
+        return left.casefold().startswith(right.casefold())
     if kind=="not":
-        return not bool(evaluate(tree[1],values))
+        return not _truthy(evaluate(tree[1],values))
     if kind=="and":
-        return bool(evaluate(tree[1],values)) and bool(evaluate(tree[2],values))
+        left=evaluate(tree[1],values)
+        return evaluate(tree[2],values) if _truthy(left) else left
     if kind=="or":
-        return bool(evaluate(tree[1],values)) or bool(evaluate(tree[2],values))
+        left=evaluate(tree[1],values)
+        return left if _truthy(left) else evaluate(tree[2],values)
     if kind in ("==","!="):
         left=evaluate(tree[1],values)
         right=evaluate(tree[2],values)
-        return (left==right) if kind=="==" else (left!=right)
+        if isinstance(left,str) and isinstance(right,str):
+            same=left.casefold()==right.casefold()
+        elif isinstance(left,str)!=isinstance(right,str):
+            same=_numeric_for_loose_equality(left)==_numeric_for_loose_equality(right)
+        else:
+            same=left==right
+        return same if kind=="==" else not same
     raise ValueError("unknown operation "+kind)
 
 
@@ -145,15 +189,15 @@ def _atomic_fact(node):
     if kind=="==":
         a,b=node[1],node[2]
         if a[0]=="var" and b[0]=="literal":
-            return ("eq",a[1],b[1])
+            return ("eq",a[1],b[1].casefold() if isinstance(b[1],str) else b[1])
         if b[0]=="var" and a[0]=="literal":
-            return ("eq",b[1],a[1])
+            return ("eq",b[1],a[1].casefold() if isinstance(a[1],str) else a[1])
         if a[0]=="var" and b[0]=="var":
             return ("same",tuple(sorted((a[1],b[1]))))
     if kind=="startsWith":
         a,b=node[1],node[2]
         if a[0]=="var" and b[0]=="literal":
-            return ("prefix",a[1],b[1])
+            return ("prefix",a[1],b[1].casefold() if isinstance(b[1],str) else b[1])
     return None
 
 
