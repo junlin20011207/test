@@ -1,0 +1,101 @@
+name: ProofCut Real Artifact Layout Contract
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  produce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Create only inert reproducible fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p payload dist
+          printf 'artifact-fixture-nonexecutable\n' > payload/trusted-marker.txt
+          printf '{"unit":"artifact-contract","number":42,"kind":"benign"}\n' > payload/review.json
+          printf '// inert dist fixture\n' > dist/index.js
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-overlay-fixture
+          path: payload/
+          if-no-files-found: error
+          retention-days: 2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-dist-fixture
+          path: dist/
+          if-no-files-found: error
+          retention-days: 2
+  root-layout:
+    needs: produce
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: printf 'trusted-fixture-nonexecutable\n' > trusted-marker.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: proofcut-overlay-fixture
+          path: .
+      - name: Validate root overwrite using data only
+        run: python benchmarks/artifact_runtime_contract.py root --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proofcut-runtime-root-results
+          path: baseline-results/runtime-contract/
+          retention-days: 4
+          if-no-files-found: warn
+  isolated-layout:
+    needs: produce
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - run: printf 'trusted-fixture-nonexecutable\n' > trusted-marker.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: proofcut-overlay-fixture
+          path: ${{ runner.temp }}/proofcut-artifact
+      - name: Validate isolation and business data preservation
+        run: python benchmarks/artifact_runtime_contract.py isolated --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proofcut-runtime-isolated-results
+          path: baseline-results/runtime-contract/
+          retention-days: 4
+          if-no-files-found: warn
+  dist-layout:
+    needs: produce
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: proofcut-dist-fixture
+          path: ${{ runner.temp }}/incoming/dist
+      - name: Validate exact dist path from upload-artifact v4
+        run: |
+          python benchmarks/artifact_runtime_contract.py dist --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+          python benchmarks/artifact_runtime_contract.py negative --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proofcut-runtime-dist-results
+          path: baseline-results/runtime-contract/
+          retention-days: 4
+          if-no-files-found: warn
