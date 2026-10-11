@@ -133,3 +133,55 @@ def test_similarly_named_third_party_action_not_misidentified(tmp_path):
                                     "unrelated/actions/download-artifact@v4"),encoding="utf-8")
     result=analyze(tmp_path)
     assert not result["findings"]
+
+
+@pytest.mark.parametrize(("run_id", "token", "recognized"), [
+    ("${{ github.event.workflow_run.id }}", "token", True),
+    ("${{github.event.workflow_run.id}}", "token", True),
+    ("  ${{ github.event.workflow_run.id }}  ", "token", True),
+    ("github.event.workflow_run.id", "token", False),
+    ("prefix-${{ github.event.workflow_run.id }}", "token", False),
+    ("${{ github.event.workflow_run.id }}-suffix", "token", False),
+    ("${{ github.event.workflow_run.id || 1 }}", "token", False),
+    ("${{ github.event.workflow_run.id }}", "", False),
+    ("1234", "token", False),
+])
+def test_official_artifact_run_identity_exactness(tmp_path,run_id,token,recognized):
+    analyze_fixture(tmp_path,"bash ./incoming/entry.sh")
+    path=tmp_path/".github"/"workflows"/"consumer.yml"
+    content=yaml.safe_load(path.read_text(encoding="utf-8"))
+    step=content["jobs"]["use"]["steps"][0]
+    step["with"]["run-id"]=run_id
+    step["with"]["github-token"]=token
+    path.write_text(yaml.safe_dump(content,sort_keys=False),encoding="utf-8")
+    result=analyze(tmp_path)
+    assert bool(result["findings"]) == recognized
+    if not recognized:
+        assert result["unknowns"]
+
+
+@pytest.mark.parametrize(("command", "recognized"), [
+    ("gh run download ${{ github.event.workflow_run.id }}", True),
+    ('gh run download "${{ github.event.workflow_run.id }}"', True),
+    ("echo ok && gh run download ${{ github.event.workflow_run.id }}", True),
+    ("echo ok\ngh run download ${{ github.event.workflow_run.id }}", True),
+    ('echo "gh run download ${{ github.event.workflow_run.id }}"', False),
+    ('printf "echo done; gh run download ${{ github.event.workflow_run.id }}"', False),
+    ("echo ok # gh run download ${{ github.event.workflow_run.id }}", False),
+    ("gh run download 1234", False),
+    ("gh run download -n build", False),
+    ("gh run download ${{ github.event.workflow_run.id || 1 }}", False),
+    ("gh run list", False),
+])
+def test_gh_cli_run_identity_not_substring(tmp_path,command,recognized):
+    analyze_fixture(tmp_path,"echo harmless")
+    path=tmp_path/".github"/"workflows"/"consumer.yml"
+    content=yaml.safe_load(path.read_text(encoding="utf-8"))
+    content["jobs"]["use"]["steps"]=[
+        {"run":command},{"run":"echo benign"}
+    ]
+    path.write_text(yaml.safe_dump(content,sort_keys=False),encoding="utf-8")
+    result=analyze(tmp_path)
+    assert bool(result["findings"]) == recognized
+    if "gh run download" in command and not recognized and command.startswith("gh "):
+        assert result["unknowns"]
