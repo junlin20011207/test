@@ -196,3 +196,20 @@ def test_pull_request_review_source_not_assumed_trusted(tmp_path):
 def test_benign_workflow_run_no_upstream_is_an_unknown_not_a_risk(tmp_path):
     result=analyze_fixture(tmp_path,"echo harmless",producer_event="push")
     assert not result["findings"]
+
+
+def test_distinct_artifact_downloads_have_distinct_witnesses(tmp_path):
+    analyze_fixture(tmp_path,"echo harmless")
+    path=tmp_path/".github"/"workflows"/"consumer.yml"
+    wf=yaml.safe_load(path.read_text(encoding="utf-8"))
+    steps=wf["jobs"]["use"]["steps"]
+    steps[0]["with"]["name"]="primary-report"
+    steps.append({"uses":"actions/download-artifact@v4",
+                  "with":{"run-id":RUN,"github-token":"synthetic-test-token",
+                          "name":"secondary-report","path":"./secondary"}})
+    path.write_text(yaml.safe_dump(wf,sort_keys=False),encoding="utf-8")
+    findings=analyze(tmp_path)["findings"]
+    assert len(findings)==2
+    assert {item["download_step"] for item in findings}=={0,2}
+    assert {item["artifact_name"] for item in findings}=={"primary-report","secondary-report"}
+    assert all(item["download_action"]=="actions/download-artifact@v4" for item in findings)
