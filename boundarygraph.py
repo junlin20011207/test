@@ -1,6 +1,6 @@
 """BoundaryGraph: defensive GitHub Actions event-conditioned artifact trust-path analysis."""
 from pathlib import Path
-import argparse, json, re
+import argparse, json, re, shlex, posixpath
 import yaml
 
 UNTRUSTED={"pull_request","pull_request_target","issue_comment","discussion_comment","pull_request_review_comment","issues"}
@@ -63,26 +63,54 @@ def transfers(steps):
     return ids,unknown
 
 def artifact_execution_evidence(steps, download_index):
-    """Find a path-correlated candidate of executing downloaded content.
+    """Conservative script-execution candidate correlated to the artifact directory.
 
-    An unrelated later shell command is not sufficient evidence.
+    Tokenize visible shell commands so comments, echo arguments and quoted strings
+    aren't mistaken for executed commands. This is not a full shell interpreter.
     """
     download=steps[download_index]
     params=download.get("with") or {}
     if not isinstance(params,dict):return False
     path=str(params.get("path","")).strip().rstrip("/")
-    if not path or "${{" in path or path in (".","./","/"):
+    if not path or chr(36)+"{{" in path:return False
+    directory=posixpath.normpath(path)
+    if directory in (".","/") or directory.startswith("../") or posixpath.isabs(directory):
         return False
-    normalized=path.removeprefix("./")
-    if not normalized or ".." in normalized.split("/"):return False
+    separators={"\n",";","&&","||","|","&","(",")"}
     for step in steps[download_index+1:]:
-        if not isinstance(step,dict):continue
+        if not isinstance(step,dict) or protected(step.get("if","")):
+            continue
         command=str(step.get("run",""))
         if not command:continue
-        for script in re.finditer(r"(?:^|[\s;&|])(?:bash|sh|python\d*|node|source)\s+([^\s;&|]+)",command,re.I):
-            candidate=script.group(1).strip(chr(39)+chr(34)).removeprefix("./")
-            if candidate.startswith(normalized+"/"):
-                return True
+        try:
+            lex=shlex.shlex(command,posix=True,punctuation_chars=";&|()")
+            lex.whitespace=" \t\r"
+            lex.whitespace_split=False
+            lex.commenters="#"
+            tokens=list(lex)
+        except ValueError:
+            # An unparseable shell command does not justify critical severity.
+            continue
+        current=[]
+        for token in [*tokens,"\n"]:
+            if token not in separators:
+                current.append(token)
+                continue
+            if not current:
+                continue
+            executable=current[0]
+            candidate=None
+            if executable in ("bash","sh","source",".","node") or re.fullmatch(r"python(?:\d+(?:\.\d+)?)?",executable):
+                args=current[1:]
+                # A short option flag is not a file. No attempt to decode -c.
+                candidate=next((arg for arg in args if not arg.startswith("-")),None)
+            elif executable.startswith("./"):
+                candidate=executable
+            if candidate and chr(36)+"{{" not in candidate:
+                resolved=posixpath.normpath(candidate)
+                if resolved.startswith(directory+"/"):
+                    return True
+            current=[]
     return False
 
 def analyze(root="."):
