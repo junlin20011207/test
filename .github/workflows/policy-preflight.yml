@@ -1,0 +1,26 @@
+name: ProofCut Read-Only GitHub Deployment Policy Preflight
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  policy-read:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Read actual isolated branch flag and visible repository rulesets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -m benchmarks.policy_preflight
+      - name: Archive real read-only policy response, never authorize deployment
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-live-policy-preflight
+          path: baseline-results/policy-preflight/
+          if-no-files-found: warn
+          retention-days: 7
