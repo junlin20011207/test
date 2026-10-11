@@ -167,6 +167,48 @@ def artifact_publications(producer):
     return named,sorted(set(uncertain))
 
 
+def gh_requested_artifact_names(tokens):
+    """Parse CLI artifact selectors for a confirmed upstream run-id.
+
+    None means unsupported selector syntax, not an unrestricted artifact name.
+    """
+    rest=tokens[3:]
+    if not rest:
+        return None
+    if UPSTREAM_RUN_ID.fullmatch(rest[0]):
+        remaining=rest[1:]
+    elif rest[:6] == ["$","{","{","github.event.workflow_run.id","}","}"]:
+        remaining=rest[6:]
+    else:
+        return None
+    names=[]
+    idx=0
+    while idx<len(remaining):
+        part=remaining[idx]
+        if part in ("-n","--name"):
+            if idx+1>=len(remaining):
+                return None
+            value=remaining[idx+1]
+            if not value or chr(36)+"{{" in value:
+                return None
+            names.append(value)
+            idx+=2
+        elif part.startswith("--name="):
+            value=part.partition("=")[2]
+            if not value or chr(36)+"{{" in value:
+                return None
+            names.append(value)
+            idx+=1
+        elif part in ("-D","--dir"):
+            if idx+1>=len(remaining):
+                return None
+            idx+=2
+        else:
+            # Other flags and additional positional arguments are not modeled.
+            return None
+    return names
+
+
 def publication_match(producer, download_step):
     """Return declared/conditional/unresolved, never runtime proof."""
     named,unknown=artifact_publications(producer)
@@ -178,14 +220,19 @@ def publication_match(producer, download_step):
     action=str(download_step.get("uses","shell")).lower()
     if action=="shell":
         commands=shell_commands(download_step.get("run",""))
-        if commands and any(gh_download_source(t) is True for t in commands):
-            # With an explicit run ID and no -n, the CLI downloads all artifacts.
-            status=("conditional" if any(x["conditional"] for group in named.values() for x in group)
-                    else "declared") if named else "unresolved"
-            return status,sorted(named),(
-                "upstream upload declared; runtime success not proven" if named else
-                "no upstream artifact publication observed")
-        return "unresolved",[],"CLI artifact selector not resolved"
+        match=[tokens for tokens in (commands or []) if gh_download_source(tokens) is True]
+        if len(match)!=1:
+            return "unresolved",[],"CLI artifact source is absent or ambiguous"
+        requested_names=gh_requested_artifact_names(match[0])
+        if requested_names is None:
+            return "unresolved",[],"CLI artifact name selector not modeled"
+        names_to_match=requested_names or sorted(named)
+        matches=[name for name in names_to_match if name in named]
+        if matches and len(matches)==len(names_to_match):
+            conditional=any(item["conditional"] for n in matches for item in named[n])
+            return ("conditional" if conditional else "declared"),sorted(set(matches)),(
+                "upstream upload declared; runtime success not proven")
+        return "unresolved",[],"CLI artifact name not established in upstream upload declarations"
     if not re.fullmatch(r"actions/download-artifact@[^\s]+",action):
         return "unresolved",[],"download selector semantics not modeled"
     if (chr(36)+"{{" in requested or chr(36)+"{{" in pattern or
