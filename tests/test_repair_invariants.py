@@ -4,7 +4,7 @@ from benchmarks.repair_invariants import check_dist_contract
 
 RUN="${{ github.event.workflow_run.id }}"
 TOKEN="${{ github.token }}"
-TMP="${{ runner.temp }}"
+TMP="${{ runner.temp }}/incoming/dist"
 HEAD="${{ github.event.workflow_run.head_branch }}"
 SHA="${{ github.event.workflow_run.head_sha }}"
 
