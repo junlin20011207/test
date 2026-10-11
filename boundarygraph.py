@@ -127,6 +127,80 @@ def transfers(steps):
     return sorted(set(ids)),unknown
 
 
+def artifact_publications(producer):
+    """Statically declared names are not proof an artifact upload ran."""
+    named={}
+    uncertain=[]
+    jobs=producer["raw"].get("jobs",{})
+    for job_name,job in jobs.items():
+        if not isinstance(job,dict):
+            continue
+        if job.get("uses"):
+            uncertain.append("reusable job may publish artifacts")
+        steps=job.get("steps",[])
+        if not isinstance(steps,list):
+            uncertain.append("unmodeled publisher steps")
+            continue
+        for i,step in enumerate(steps):
+            if not isinstance(step,dict):
+                continue
+            action=str(step.get("uses","")).strip().lower()
+            if re.fullmatch(r"actions/upload-artifact@[^\s]+",action):
+                params=step.get("with") or {}
+                if not isinstance(params,dict) or not params.get("path"):
+                    uncertain.append("upload has missing path")
+                    continue
+                if str(params.get("archive","true")).lower()=="false":
+                    uncertain.append("unarchived artifact name follows source file")
+                    continue
+                name=str(params.get("name") or "artifact").strip()
+                if not name or chr(36)+"{{" in name:
+                    uncertain.append("dynamic artifact name")
+                    continue
+                named.setdefault(name,[]).append({
+                    "job":str(job_name),"step":i,
+                    "conditional":bool(step.get("if") or job.get("if"))})
+            elif ("upload-artifact" in action or
+                  ("upload" in str(step.get("run","")).lower() and
+                   "artifact" in str(step.get("run","")).lower())):
+                uncertain.append("unmodeled artifact publisher")
+    return named,sorted(set(uncertain))
+
+
+def publication_match(producer, download_step):
+    """Return declared/conditional/unresolved, never runtime proof."""
+    named,unknown=artifact_publications(producer)
+    params=download_step.get("with") or {}
+    if not isinstance(params,dict):
+        params={}
+    requested=str(params.get("name","")).strip()
+    pattern=str(params.get("pattern","")).strip()
+    action=str(download_step.get("uses","")).lower()
+    if not re.fullmatch(r"actions/download-artifact@[^\s]+",action):
+        return "unresolved",[],"download selector semantics not modeled"
+    if (chr(36)+"{{" in requested or chr(36)+"{{" in pattern or
+        (requested and pattern)):
+        return "unresolved",[],"dynamic or conflicting artifact selector"
+    if pattern:
+        import fnmatch
+        matches=[n for n in named if fnmatch.fnmatchcase(n,pattern)]
+    elif requested:
+        matches=[requested] if requested in named else []
+    else:
+        matches=sorted(named)
+    if matches:
+        conditional=any(x["conditional"] for n in matches for x in named[n])
+        return ("conditional" if conditional else "declared"),matches,(
+            "upload has conditions" if conditional else
+            "upstream upload declared; runtime success not proven")
+    if unknown:
+        return "unresolved",[],"; ".join(unknown)
+    if named:
+        return "unresolved",[],("no declared upstream artifact matches selector; known: "
+                               +", ".join(sorted(named)))
+    return "unresolved",[],"no upstream artifact publication observed"
+
+
 def artifact_execution_evidence(steps, download_index):
     """Conservative script-execution candidate correlated to the artifact directory.
 
@@ -168,7 +242,7 @@ def analyze(root="."):
     workflows,unknown=read(root)
     named={}
     for w in workflows:named.setdefault(w["name"],[]).append(w)
-    findings=[];guarded=[]
+    findings=[];guarded=[];unverified=[]
     for consumer in workflows:
         if "workflow_run" not in consumer["events"]:continue
         conf=consumer["raw"]["on"].get("workflow_run",{})
@@ -197,23 +271,33 @@ def analyze(root="."):
                         if protected(steps[i].get("if","")):
                             guarded.append({"consumer":consumer["path"],"job":str(jobname),"producer":producer["path"],"step":i,"reason":"artifact transfer gated to trusted push origin"})
                             continue
+                        status,published_names,publisher_reason=publication_match(producer,steps[i])
                         possible_exec=artifact_execution_evidence(steps,i)
-                        findings.append({
+                        candidate={
                           "rule":"BG-CROSS-001","severity":"critical" if possible_exec else "high",
                           "producer":producer["path"],"consumer":consumer["path"],"job":str(jobname),
                           "download_step":i,
                           "download_action":str(steps[i].get("uses","shell")),
                           "artifact_name":str((steps[i].get("with") or {}).get("name","")) if isinstance(steps[i].get("with") or {},dict) else "",
+                          "publisher_status":status,
+                          "publisher_names":published_names,
+                          "publisher_reason":publisher_reason,
                           "witness":["untrusted events "+",".join(bad),"workflow_run "+str(name),
                                     "explicit upstream artifact transfer",permission+" secret_refs="+str(secrets),
                                     "downloaded content execution: "+("path-correlated candidate" if possible_exec else "not established")],
                           "repair":["require trusted upstream event for privileged job",
                                     "isolate untrusted artifacts in read-only validation",
                                     "avoid code execution of untrusted artifact; reduce token rights"],
-                          "boundary":"Potential influence path, not proof of exploitation."})
-    return {"workflows":len(workflows),"findings":findings,"guarded":guarded,
+                          "boundary":"Potential influence path, not proof of exploitation."}
+                        if status=="declared":
+                            findings.append(candidate)
+                        else:
+                            unverified.append(candidate)
+                            unknown.append(consumer["path"]+": upstream artifact publication "+status+
+                                           " for "+str(name)+": "+publisher_reason)
+    return {"workflows":len(workflows),"findings":findings,"unverified":unverified,"guarded":guarded,
             "unknowns":sorted(set(unknown)),
-            "scope":"limited static proof obligations; no findings does not mean safe"}
+            "scope":"explicit upstream upload declarations required for findings; no proof of runtime upload"}
 
 def main(argv=None):
     a=argparse.ArgumentParser()
@@ -223,7 +307,7 @@ def main(argv=None):
     args=a.parse_args(argv)
     r=analyze(args.path)
     print(json.dumps(r,ensure_ascii=False,indent=2) if args.json else
-          f'{r["workflows"]} workflows, {len(r["findings"])} findings, {len(r["unknowns"])} unknowns')
+          f'{r["workflows"]} workflows, {len(r["findings"])} declared paths, {len(r["unverified"])} unverified, {len(r["unknowns"])} unknowns')
     return int(bool(r["findings"]) or (args.strict and bool(r["unknowns"])))
 
 if __name__=="__main__":raise SystemExit(main())
