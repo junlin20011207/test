@@ -25,8 +25,12 @@ def read(root):
     return w,unknown
 
 def protected(condition):
-    c=str(condition or "")
-    return bool(PUSH_GUARD.search(c)) and not any(x in c for x in ("||"," or ","!","contains(","fromJSON("))
+    """Conservatively recognize only a complete push-origin guard."""
+    c=str(condition or "").strip()
+    if c.startswith("${{") and c.endswith("}}"):
+        c=c[3:-2].strip()
+    c=re.sub(r"\s+"," ",c)
+    return bool(PUSH_GUARD.fullmatch(c))
 
 def privilege(w,j):
     p=j.get("permissions",w.get("permissions"))
@@ -75,9 +79,10 @@ def artifact_execution_evidence(steps, download_index):
         if not isinstance(step,dict):continue
         command=str(step.get("run",""))
         if not command:continue
-        script=re.search(r"(?:^|[\s;&|])(?:bash|sh|python\d*|node|source)\s+([^\s;&|]+)",command,re.I)
-        if script and script.group(1).strip(chr(39)+chr(34)).removeprefix("./").startswith(normalized+"/"):
-            return True
+        for script in re.finditer(r"(?:^|[\s;&|])(?:bash|sh|python\d*|node|source)\s+([^\s;&|]+)",command,re.I):
+            candidate=script.group(1).strip(chr(39)+chr(34)).removeprefix("./")
+            if candidate.startswith(normalized+"/"):
+                return True
     return False
 
 def analyze(root="."):
