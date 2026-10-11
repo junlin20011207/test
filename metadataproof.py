@@ -38,6 +38,12 @@ def metadata_proofs(root="."):
     evidence=[]
     gaps=[]
     for candidate in base["findings"]+base.get("unverified",[]):
+        producer=index.get(candidate["producer"])
+        if producer is None or not producer["events"].intersection(
+            {"pull_request","pull_request_review"}):
+            gaps.append({"consumer":candidate["consumer"],
+                         "reason":"producer fork-modifiable workflow origin not established"})
+            continue
         if candidate.get("publisher_status") not in ("declared","conditional"):
             continue
         source=index.get(candidate["consumer"])
