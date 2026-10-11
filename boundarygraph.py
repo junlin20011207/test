@@ -53,13 +53,13 @@ def transfers(steps):
         params=s.get("with") or {}
         if not isinstance(params,dict):params={}
         command=str(s.get("run",""))
-        if re.fullmatch(r"actions/download-artifact@[^\\s]+",action):
+        if re.fullmatch(r"actions/download-artifact@[^\s]+",action):
             run_id=str(params.get("run-id",""))
             token=str(params.get("github-token",""))
             # The official action defaults to CURRENT run, not the upstream run.
             if "github.event.workflow_run.id" in run_id and token:ids.append(i)
             elif run_id or token:unknown.append("download run identity unresolved")
-        elif re.fullmatch(r"dawidd6/action-download-artifact@[^\\s]+",action):
+        elif re.fullmatch(r"dawidd6/action-download-artifact@[^\s]+",action):
             if "github.event.workflow_run.id" in str(params.get("run_id","")):ids.append(i)
             else:unknown.append("third-party artifact origin unresolved")
         elif "gh run download" in command:
