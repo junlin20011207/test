@@ -21,11 +21,21 @@ jobs:
           GH_FALSE: ${{ startsWith('Release', 'dependabot/') }}
           GH_COMBINED: ${{ 'main' == 'MAIN' && !startsWith('RELEASE','dependabot/') }}
         run: python -m benchmarks.github_expression_oracle
+      - name: Compare operand-valued GitHub expressions
+        env:
+          GH_AND: ${{ 'hit' && 'value' }}
+          GH_OR: ${{ '' || 'fallback' }}
+          GH_OR_KEEP: ${{ 'already' || 'fallback' }}
+          GH_FALSE_OR: ${{ false || 'lowercase' }}
+          GH_TRUE_AND: ${{ true && 'kept' }}
+          GH_FALSE_AND: ${{ false && 'unreachable' }}
+          GH_NESTED: ${{ startsWith('x' && 'Dependabot/pkg','dependabot/') }}
+        run: python -m benchmarks.github_value_oracle
       - name: Save official evaluator comparisons
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: expression-oracle-results
-          path: baseline-results/expression-oracle/results.json
+          path: baseline-results/expression-oracle/
           if-no-files-found: warn
           retention-days: 5
