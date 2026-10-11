@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "study": "Known public advisory regression, not new vulnerability discovery",
+  "reference": "https://securitylab.github.com/advisories/GHSL-2026-204_spiffe_spire_repository/",
+  "source": "spiffe/spire",
+  "cases": [
+    {
+      "label": "vulnerable",
+      "commit": "ef8527ec91013c6c1b4741e0f6ac0786576e620e",
+      "expected_overlay_count": 1,
+      "files": [
+        {
+          "path": ".github/workflows/assign_reviewer_review_apply.yaml",
+          "sha": "20108b784141465dbcb62c2468eb3212305b74a0",
+          "size": 9306
+        },
+        {
+          "path": ".github/workflows/assign_reviewer_review_capture.yaml",
+          "sha": "9c1b5331f4842c24a923425522c2138c2fe882fb",
+          "size": 1932
+        }
+      ]
+    },
+    {
+      "label": "fixed",
+      "commit": "6d10e93a4eef9b270cba5dc6082f1c3c5bd99879",
+      "expected_overlay_count": 0,
+      "files": [
+        {
+          "path": ".github/workflows/assign_reviewer_review_apply.yaml",
+          "sha": "b2792a4b9c01d7e598bb38d82e29fb241744c0fc",
+          "size": 9569
+        },
+        {
+          "path": ".github/workflows/assign_reviewer_review_capture.yaml",
+          "sha": "9c1b5331f4842c24a923425522c2138c2fe882fb",
+          "size": 1932
+        }
+      ]
+    }
+  ]
+}
