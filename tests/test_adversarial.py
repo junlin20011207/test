@@ -87,7 +87,7 @@ def test_execution_step_guard_is_not_executable_under_untrusted_origin(tmp_path)
               "jobs":{"use":{"runs-on":"ubuntu-latest","steps":[
                   {"uses":"actions/download-artifact@v4",
                    "with":{"github-token":"synthetic", "run-id":RUN, "path":"incoming"}},
-                  {"if":"github.event.workflow_run.event == 'push',
+                  {"if":"github.event.workflow_run.event == 'push'",
                    "run":"bash ./incoming/entry.sh"}]}}}
     (d/"a.yml").write_text(yaml.safe_dump(source),encoding="utf-8")
     (d/"b.yml").write_text(yaml.safe_dump(target),encoding="utf-8")
