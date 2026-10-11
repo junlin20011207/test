@@ -1,1 +1,1 @@
-fixture version A (benign)
+fixture version B (benign, authorized laboratory write)
