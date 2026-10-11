@@ -1,0 +1,112 @@
+"""Safety-focused metamorphic tests; fixture YAML is never installed as workflows."""
+from pathlib import Path
+import pytest
+import yaml
+from boundarygraph import analyze
+
+
+RUN = "$" + "{{ github.event.workflow_run.id }}"
+
+
+def analyze_fixture(tmp_path, command, *, consumer_step_guard=None,
+                    consumer_job_guard=None, permission="write", producer_event="pull_request",
+                    upstream=True, secret=False):
+    d = tmp_path / ".github" / "workflows"
+    d.mkdir(parents=True, exist_ok=True)
+    producer = {"name": "Producer", "on": [producer_event], "jobs": {
+        "build": {"runs-on": "ubuntu-latest", "steps": [{"run": "echo benign"}]}
+    }}
+    steps = [{"uses": "actions/download-artifact@v4",
+              "with": {"run-id": RUN, "github-token": "synthetic-test-token", "path": "./incoming"}},
+             {"run": command}]
+    if consumer_step_guard is not None:
+        steps[0]["if"] = consumer_step_guard
+    job = {"runs-on": "ubuntu-latest", "steps": steps}
+    if consumer_job_guard is not None:
+        job["if"] = consumer_job_guard
+    if secret:
+        job["env"] = {"MARKER": "$" + "{{ secrets.SYNTHETIC_MARKER }}"}
+    consumer = {"name": "Consumer",
+                "on": {"workflow_run": {"workflows": ["Producer"], "types": ["completed"]}},
+                "permissions": {"contents": permission},
+                "jobs": {"use": job}}
+    (d / "producer.yml").write_text(yaml.safe_dump(producer, sort_keys=False), encoding="utf-8")
+    (d / "consumer.yml").write_text(yaml.safe_dump(consumer, sort_keys=False), encoding="utf-8")
+    if not upstream:
+        steps[0]["with"].pop("run-id")
+        (d / "consumer.yml").write_text(yaml.safe_dump(consumer, sort_keys=False), encoding="utf-8")
+    return analyze(tmp_path)
+
+
+@pytest.mark.parametrize(("command", "severity"), [
+    ("bash ./incoming/entry.sh", "critical"),
+    ("sh ./incoming/entry.sh", "critical"),
+    ("python3 ./incoming/check.py", "critical"),
+    ("python3 -u ./incoming/check.py", "critical"),
+    ("source ./incoming/env.sh", "critical"),
+    (". ./incoming/env.sh", "critical"),
+    ("./incoming/entry.sh", "critical"),
+    ("echo inspect && bash ./incoming/entry.sh", "critical"),
+    ("echo inspect\nbash ./incoming/entry.sh", "critical"),
+    ("echo inspect | bash ./incoming/entry.sh", "critical"),
+    ('echo "bash ./incoming/entry.sh"', "high"),
+    ("echo bash ./incoming/entry.sh", "high"),
+    ("echo harmless # bash ./incoming/entry.sh", "high"),
+    ("bash ./incoming/../safe.sh", "high"),
+    ("bash ./incoming-other/entry.sh", "high"),
+    ("bash ./trusted/entry.sh", "high"),
+    ("echo inspect\n# bash ./incoming/entry.sh", "high"),
+    ("cat ./incoming/entry.sh", "high"),
+])
+def test_shell_command_mutations(tmp_path, command, severity):
+    r = analyze_fixture(tmp_path, command)
+    assert len(r["findings"]) == 1
+    assert r["findings"][0]["severity"] == severity
+
+
+@pytest.mark.parametrize(("guard", "is_cut"), [
+    ("github.event.workflow_run.event == 'push'", True),
+    ("$" + "{{ github.event.workflow_run.event == 'push' }}", True),
+    ("github.event.workflow_run.event == 'push' || true", False),
+    ("github.event.workflow_run.event == 'push' && false", False),
+    ("github.event.workflow_run.conclusion == 'success'", False),
+])
+def test_download_guard_mutations(tmp_path, guard, is_cut):
+    r = analyze_fixture(tmp_path, "bash ./incoming/entry.sh", consumer_step_guard=guard)
+    assert bool(r["guarded"]) == is_cut
+    assert bool(r["findings"]) != is_cut
+
+
+def test_execution_step_guard_is_not_executable_under_untrusted_origin(tmp_path):
+    d = tmp_path / ".github" / "workflows"
+    d.mkdir(parents=True)
+    source = {"name":"Producer","on":["pull_request"],
+              "jobs":{"build":{"runs-on":"ubuntu-latest","steps":[{"run":"echo ok"}]}}}
+    target = {"name":"Consumer","on":{"workflow_run":{"workflows":["Producer"]}},
+              "permissions":{"contents":"write"},
+              "jobs":{"use":{"runs-on":"ubuntu-latest","steps":[
+                  {"uses":"actions/download-artifact@v4",
+                   "with":{"github-token":"synthetic", "run-id":RUN, "path":"incoming"}},
+                  {"if":"github.event.workflow_run.event == 'push',
+                   "run":"bash ./incoming/entry.sh"}]}}}
+    (d/"a.yml").write_text(yaml.safe_dump(source),encoding="utf-8")
+    (d/"b.yml").write_text(yaml.safe_dump(target),encoding="utf-8")
+    findings=analyze(tmp_path)["findings"]
+    assert len(findings)==1
+    assert findings[0]["severity"]=="high"
+
+
+@pytest.mark.parametrize(("event", "permission", "remote", "secrets", "risk"), [
+    ("pull_request", "write", True, False, True),
+    ("pull_request", "read", True, False, False),
+    ("pull_request", "read", True, True, True),
+    ("pull_request", "write", False, False, False),
+    ("push", "write", True, False, False),
+    ("issue_comment", "write", True, False, True),
+    ("workflow_dispatch", "write", True, False, False),
+])
+def test_source_privilege_mutations(tmp_path, event, permission, remote, secrets, risk):
+    r=analyze_fixture(tmp_path, "bash ./incoming/entry.sh",
+                      permission=permission, producer_event=event,
+                      upstream=remote, secret=secrets)
+    assert bool(r["findings"]) is risk
