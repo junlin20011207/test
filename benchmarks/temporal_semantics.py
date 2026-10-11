@@ -57,11 +57,27 @@ def temporal_contract(steps):
     labels=("download","check","checkout","verify","apply","push")
     indices={name:_matches(steps,name) for name in labels}
     unique=all(len(values)==1 for values in indices.values())
-    order=[indices[name][0] for name in labels] if unique else []
-    ordered=unique and order==sorted(order)
-
     decisions=[_if_guard(steps[indices[name][0]].get("if")) if unique else "unverified"
                for name in labels]
+    # Only prove actual data and control dependencies. A trusted event-based,
+    # unconditional checkout is independent of an isolated artifact download.
+    # Its location relative to download/check is not itself a safety defect.
+    causal_edges=[
+        ("download","check"),
+        ("download","apply"),
+        ("check","apply"),
+        ("checkout","verify"),
+        ("verify","apply"),
+        ("apply","push"),
+    ]
+    if unique:
+        for name,decision in zip(labels,decisions):
+            if name not in ("check","download") and decision=="presence_guard":
+                causal_edges.append(("check",name))
+    ordered=unique and all(
+        indices[before][0]<indices[after][0]
+        for before,after in causal_edges)
+
     no_skipped=unique and all(x in ("unconditional","presence_guard") for x in decisions)
     download_tolerance=(
         _tolerance(steps[indices["download"][0]].get("continue-on-error"))
@@ -82,7 +98,8 @@ def temporal_contract(steps):
             no_skipped and critical_not_tolerated and download_safe),
         "explanation":{
             "unique_steps":bool(unique),
-            "indices":{name:(values[0] if len(values)==1 else None)
+            "mandatory_precedence_edges":causal_edges,
+            "indices":{name:(values[0] if len(values)==1 else None)}
                        for name,values in indices.items()},
             "step_conditions":dict(zip(labels,decisions)),
             "download_continue_on_error":download_tolerance,
