@@ -15,6 +15,12 @@ SAMPLES=[
     ("QUOTED","'It''s safe' == 'it''s SAFE'"),
     ("FALSE","startsWith('Release', 'dependabot/')"),
     ("COMBINED","'main' == 'MAIN' && !startsWith('RELEASE','dependabot/')"),
+    ("COERCE_EMPTY","'' == false"),
+    ("COERCE_ZERO","'0' == false"),
+    ("COERCE_ONE","'1' == true"),
+    ("COERCE_NAN","'hello' == true"),
+    ("START_TRUE","startsWith(true, 't')"),
+    ("START_FALSE","startsWith(false, 'f')"),
 ]
 
 
