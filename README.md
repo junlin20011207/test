@@ -21,6 +21,8 @@ python boundarygraph.py . --json
 - [GitHub CI：59 项自动化测试通过](https://github.com/junlin20011207/test/actions/runs/38133987471)。包含 Shell 命令误报、步骤级可信条件、缺失扫描目标及 Action 名称伪装测试；属于测试样本内验证。
 - [三工具独立对照 CI](https://github.com/junlin20011207/test/actions/runs/38133888059) 已运行 BoundaryGraph、zizmor 1.30.1 和 Poutine。四组自建合成工作流的原始告警类型不同，**不能依据告警数量断言优劣**。
 - [对照实验的详细记录与局限](docs/differential-study.md)。当前还没有真实仓库人工标注数据集、同一评测语义下的可靠精确率/召回率。
+- [真实公开工作流研究报告](docs/public-corpus-study.md)：9 个公开项目的 **108/108** 份固定提交 YAML 完成校验与只读扫描，其中仅 **6** 份使用 `workflow_run`；识别 **8** 条未标注的潜在工件影响路径，全部不是已确认漏洞。通用样本组 62 份文件不包含目标触发器，因此其零告警不能用于评估误报率。
+- [最新外部扫描 CI](https://github.com/junlin20011207/test/actions/runs/38134817226)：保存了每条候选路径对应的下载步骤、工件名称与来源。
 
 ## 研究阶段及评分
 
