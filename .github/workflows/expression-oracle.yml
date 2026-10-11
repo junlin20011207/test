@@ -20,6 +20,12 @@ jobs:
           GH_QUOTED: ${{ 'It''s safe' == 'it''s SAFE' }}
           GH_FALSE: ${{ startsWith('Release', 'dependabot/') }}
           GH_COMBINED: ${{ 'main' == 'MAIN' && !startsWith('RELEASE','dependabot/') }}
+          GH_COERCE_EMPTY: ${{ '' == false }}
+          GH_COERCE_ZERO: ${{ '0' == false }}
+          GH_COERCE_ONE: ${{ '1' == true }}
+          GH_COERCE_NAN: ${{ 'hello' == true }}
+          GH_START_TRUE: ${{ startsWith(true, 't') }}
+          GH_START_FALSE: ${{ startsWith(false, 'f') }}
         run: python -m benchmarks.github_expression_oracle
       - name: Compare operand-valued GitHub expressions
         env:
