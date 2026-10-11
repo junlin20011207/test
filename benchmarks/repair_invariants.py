@@ -10,6 +10,7 @@ import re
 import yaml
 from benchmarks.contract_semantics import harden
 from benchmarks.temporal_semantics import temporal_contract
+from benchmarks.ref_update_contract import inspect_push_step
 
 RUN="$"+"{{ github.event.workflow_run.id }}"
 TOKEN="$"+"{{ github.token }}"
@@ -93,6 +94,7 @@ def check_dist_contract(producer,consumer):
                     "startsWith(github.event.workflow_run.head_branch" in str(consumer_if)),
     }
     obligations=harden(obligations,producer,consumer,producer_steps,consumer_steps)
+    ref_update=inspect_push_step(push,consumer.get("jobs",{}).get("commit",{}))
     temporal=temporal_contract(consumer_steps,consumer.get("jobs",{}).get("commit",{}))
     obligations["temporal_order_and_dependencies"]=temporal["temporal_order_and_dependencies"]
     obligations["critical_step_failure_propagation"]=temporal["critical_step_failure_propagation"]
@@ -103,6 +105,7 @@ def check_dist_contract(producer,consumer):
             "total_count":len(obligations),
             "checks":obligations,
             "causal_evidence":temporal["explanation"],
+            "ref_update_assurance":ref_update,
             "limitations":"restricted expression parser and bounded negative scenarios; not exhaustive condition semantics or proof of business behavior"}
 
 
