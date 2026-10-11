@@ -90,3 +90,37 @@ def test_unrelated_script_not_attributed_to_artifact(tmp_path):
     result=make(tmp_path,execute=True)
     assert result["findings"][0]["severity"]=="high"
     assert "not established" in result["findings"][0]["witness"][-1]
+
+
+@pytest.mark.parametrize("guard",[
+    "github.event.workflow_run.event == 'push' == false",
+    "contains('github.event.workflow_run.event == \\'push\\'', 'push')",
+    "github.event.workflow_run.event == 'push' || true",
+    "github.event.workflow_run.event == 'push' && false",
+])
+def test_ambiguous_guard_never_claims_protected(tmp_path,guard):
+    assert make(tmp_path,guard=guard)["findings"]
+
+
+def test_wrapped_exact_push_guard_is_protected(tmp_path):
+    guard="${{ github.event.workflow_run.event == 'push' }}"
+    result=make(tmp_path,guard=guard)
+    assert not result["findings"] and result["guarded"]
+
+
+def test_second_shell_command_under_download_path(tmp_path):
+    folder=tmp_path/".github"/"workflows"
+    folder.mkdir(parents=True)
+    (folder/"a.yml").write_text(
+        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
+    (folder/"b.yml").write_text(
+        "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
+        "permissions: {contents: write}\njobs:\n  deploy:\n"
+        "    runs-on: ubuntu-latest\n    steps:\n"
+        "      - uses: actions/download-artifact@v4\n"
+        "        with:\n          github-token: token\n"
+        "          run-id: ${{ github.event.workflow_run.id }}\n"
+        "          path: ./incoming\n"
+        "      - run: echo inspect && bash ./incoming/entry.sh\n")
+    result=analyze(tmp_path)
+    assert result["findings"][0]["severity"]=="critical"
