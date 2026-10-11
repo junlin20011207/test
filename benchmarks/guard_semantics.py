@@ -101,6 +101,15 @@ def parse(source):
     return result
 
 
+def _truthy(value):
+    """Subset of GitHub truthiness: documented Boolean and string values."""
+    if isinstance(value,bool):
+        return value
+    if isinstance(value,str):
+        return len(value)>0
+    raise ValueError("unmodeled expression value type")
+
+
 def evaluate(tree,values):
     kind=tree[0]
     if kind in ("bool","literal"):
@@ -116,11 +125,13 @@ def evaluate(tree,values):
             raise ValueError("startsWith expects strings")
         return left.casefold().startswith(right.casefold())
     if kind=="not":
-        return not bool(evaluate(tree[1],values))
+        return not _truthy(evaluate(tree[1],values))
     if kind=="and":
-        return bool(evaluate(tree[1],values)) and bool(evaluate(tree[2],values))
+        left=evaluate(tree[1],values)
+        return evaluate(tree[2],values) if _truthy(left) else left
     if kind=="or":
-        return bool(evaluate(tree[1],values)) or bool(evaluate(tree[2],values))
+        left=evaluate(tree[1],values)
+        return left if _truthy(left) else evaluate(tree[2],values)
     if kind in ("==","!="):
         left=evaluate(tree[1],values)
         right=evaluate(tree[2],values)
