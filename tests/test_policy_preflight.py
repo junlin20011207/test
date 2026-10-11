@@ -36,3 +36,15 @@ def test_unknown_or_protected_policy_fails_closed(branch_info,rulesets,error):
                   branch_info,rulesets,error)
     assert result["status"]=="DEPLOYMENT_NOT_VERIFIED"
     assert not result["production_deployment_authorized"]
+
+
+
+@pytest.mark.parametrize("foreign_repo",[
+    "other-owner/test",
+    "junlin20011207/another-repository",
+])
+def test_matching_lab_name_in_another_repo_never_authorized(foreign_repo):
+    result=assess(foreign_repo,"research/ref-cas-remote-positive-20261011",
+                  {"protected":False},[])
+    assert result["status"]=="DEPLOYMENT_NOT_VERIFIED"
+    assert result["production_deployment_authorized"] is False
