@@ -19,14 +19,17 @@ for tool in tools:
         try:
             data=json.loads(raw)
             if tool=="boundarygraph":
-                print(f'{case}: paths={len(data.get("findings",[]))}, unknown={len(data.get("unknowns",[]))}')
+                print(f'{case}: declared_paths={len(data.get("findings",[]))}, unverified={len(data.get("unverified",[]))}, unknown={len(data.get("unknowns",[]))}')
             elif tool=="zizmor":
                 findings=data if isinstance(data,list) else [data]
                 names=[str(x.get("ident","unknown")) for x in findings if isinstance(x,dict)]
                 print(f"{case}: {len(names)} total findings; ident={','.join(sorted(set(names))[:25])}")
+            elif tool=="poutine":
+                findings=data.get("findings",[]) if isinstance(data,dict) else []
+                rules=sorted(set(str(x.get("rule_id","unknown")) for x in findings if isinstance(x,dict)))
+                print(f"{case}: total_findings={len(findings)}, rule_ids={','.join(rules)}")
             else:
-                print(f"{case}: json_top_type={type(data).__name__}, top_keys={list(data)[:15] if isinstance(data,dict) else 'array'}")
-                print(f"    json_preview={json.dumps(data,ensure_ascii=False)[:650]}")
+                print(f"{case}: json_top_type={type(data).__name__}")
         except (ValueError,TypeError) as error:
             print(f"{case}: MALFORMED/EMPTY json ({type(error).__name__}), preview={raw[:250]}")
         if stderr:

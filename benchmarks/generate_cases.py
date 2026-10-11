@@ -20,7 +20,9 @@ def generate():
         upstream=(
           "name: Producer\non: [pull_request]\npermissions: {contents: read}\n"+
           "jobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n"+
-          "      - run: echo 'static fixture only'\n"
+          "      - run: echo 'static fixture only'\n"+
+          "      - uses: actions/upload-artifact@v4\n"+
+          "        with: {name: artifact, path: fixture.txt}\n"
         )
         guard=("    if: >-\n      "+config["guard"]+"\n") if config["guard"] else ""
         wiring=("        with:\n"+
