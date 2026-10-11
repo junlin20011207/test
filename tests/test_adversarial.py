@@ -110,3 +110,26 @@ def test_source_privilege_mutations(tmp_path, event, permission, remote, secrets
                       permission=permission, producer_event=event,
                       upstream=remote, secret=secrets)
     assert bool(r["findings"]) is risk
+
+
+def test_missing_scan_target_not_silent(tmp_path):
+    missing=tmp_path/"missing-repo"
+    result=analyze(missing)
+    assert result["unknowns"] and not result["findings"]
+
+
+def test_empty_workflow_directory_not_silent(tmp_path):
+    (tmp_path/".github"/"workflows").mkdir(parents=True)
+    result=analyze(tmp_path)
+    assert any("no YAML workflows" in issue for issue in result["unknowns"])
+
+
+def test_similarly_named_third_party_action_not_misidentified(tmp_path):
+    analyze_fixture(tmp_path,"bash ./incoming/entry.sh")
+    path=tmp_path/".github"/"workflows"/"consumer.yml"
+    content=path.read_text(encoding="utf-8")
+    assert "actions/download-artifact@v4" in content
+    path.write_text(content.replace("actions/download-artifact@v4",
+                                    "unrelated/actions/download-artifact@v4"),encoding="utf-8")
+    result=analyze(tmp_path)
+    assert not result["findings"]
