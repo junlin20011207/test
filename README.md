@@ -50,6 +50,17 @@
 - [**官方 CodeQL 2.27.2 同源对照**](https://github.com/junlin20011207/test/actions/runs/38144366160)：一份历史修复草案及六种单点违约修改逐例执行 `security-extended`；ContractLab 对六个修改 **6/6 拒绝**，CodeQL 对六个变体均为 **0 条**漏洞规则告警。这说明特定**业务/安全契约验收**与通用漏洞扫描具有互补性，不意味着 CodeQL 漏检了六个漏洞。
 - 局限：例子全部来自同一项已披露历史项目，违约修改与表达式样本由研究者设计，不能证明未知真实项目的效果、完整平台语义兼容性、首创性或高水平获奖能力。
 
+## 第七阶段：因果顺序与失败传播的合约反证（2026-10-11）
+
+- [**第七阶段完整研究报告**](docs/proofcut-phase7-causal-contract.md) ｜ [**独立草稿 PR #9**](https://github.com/junlin20011207/test/pull/9)。
+- 从原先的“出现了 SHA 校验与 Git Push 语句”升级为“数据下载/业务就绪/源码检出/提交 SHA 校验/产物应用/推送存在明确的必要先后关系”，并将**独立的合法步骤重排**与真实的依赖违约区分开。
+- 先用 [原始红色 CI](https://github.com/junlin20011207/test/actions/runs/38146223404) 证明旧检查器对 12 种变更有 10 种错误接受；之后发现过严的全顺序也会造成 [2 种误拒绝](https://github.com/junlin20011207/test/actions/runs/38146547078)，于是改为带动态输出依赖的偏序图。
+- 新增 Job/Step 级容错与 `working-directory` 合同，相关 [五种此前错误接受的场景](https://github.com/junlin20011207/test/actions/runs/38146751558) 也已被覆盖；完整回归测试 [301 项通过](https://github.com/junlin20011207/test/actions/runs/38146815859)，历史修复草案 [16/16 项必要义务](https://github.com/junlin20011207/test/actions/runs/38146815962) 满足。
+- [**隔离本地 Git 真实运行时双场景**](https://github.com/junlin20011207/test/actions/runs/38146425288) 确认：若目标分支已改变，先校验不会写入；先 Push 再检查会产生已经执行、无法被事后验证撤销的本地分支变更。无远程业务系统写入。
+- 真实 GitHub Runner 容错步骤结果验证：`.github/workflows/step-status-oracle.yml`；同源 CodeQL 2.27.2 与十项业务/权限/时序合同扰动交叉验证：`.github/workflows/codeql-compare.yml`。
+
+本阶段仅证明**特定跨运行 Artifact 修复模板**的必要因果合同，不是对任意 GitHub Actions 流程的完整形式化证明，也未发明 CodeQL 已有的漏洞检测能力。
+
 ## 快速复现
 
 ```bash
