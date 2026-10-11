@@ -51,6 +51,11 @@ def parse(source):
             return ("bool",token=="true")
         if token and token[0] in ("'",'"'):
             take()
+            # GitHub Actions expressions require single-quoted string literals.
+            # A double-quoted token is invalid in this context, even if it
+            # would mean the same value in Python.
+            if token[0] != "'":
+                raise ValueError("GitHub expression string must use single quotes")
             if len(token)<2 or token[-1]!=token[0]:
                 raise ValueError("invalid literal")
             return ("literal",token[1:-1])
