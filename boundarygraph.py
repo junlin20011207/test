@@ -58,6 +58,28 @@ def transfers(steps):
             else:unknown.append("CLI artifact origin unresolved")
     return ids,unknown
 
+def artifact_execution_evidence(steps, download_index):
+    """Find a path-correlated candidate of executing downloaded content.
+
+    An unrelated later shell command is not sufficient evidence.
+    """
+    download=steps[download_index]
+    params=download.get("with") or {}
+    if not isinstance(params,dict):return False
+    path=str(params.get("path","")).strip().rstrip("/")
+    if not path or "${{" in path or path in (".","./","/"):
+        return False
+    normalized=path.removeprefix("./")
+    if not normalized or ".." in normalized.split("/"):return False
+    for step in steps[download_index+1:]:
+        if not isinstance(step,dict):continue
+        command=str(step.get("run",""))
+        if not command:continue
+        script=re.search(r"(?:^|[\\s;&|])(?:bash|sh|python\\d*|node|source)\\s+([^\\s;&|]+)",command,re.I)
+        if script and script.group(1).strip("'\\\"").removeprefix("./").startswith(normalized+"/"):
+            return True
+    return False
+
 def analyze(root="."):
     workflows,unknown=read(root)
     named={}
@@ -88,12 +110,13 @@ def analyze(root="."):
                     secrets=bool(SECRET.search(str(job)+str(consumer["raw"].get("env",{}))))
                     if not privileged and not secrets:continue
                     for i in downloads:
-                        possible_exec=any(isinstance(s,dict) and (EXEC.search(str(s.get("run",""))) or "github-script@" in str(s.get("uses",""))) for s in steps[i+1:])
+                        possible_exec=artifact_execution_evidence(steps,i)
                         findings.append({
                           "rule":"BG-CROSS-001","severity":"critical" if possible_exec else "high",
                           "producer":producer["path"],"consumer":consumer["path"],"job":str(jobname),
                           "witness":["untrusted events "+",".join(bad),"workflow_run "+str(name),
-                                    "explicit upstream artifact transfer",permission+" secret_refs="+str(secrets)],
+                                    "explicit upstream artifact transfer",permission+" secret_refs="+str(secrets),
+                                    "downloaded content execution: "+("path-correlated candidate" if possible_exec else "not established")],
                           "repair":["require trusted upstream event for privileged job",
                                     "isolate untrusted artifacts in read-only validation",
                                     "avoid code execution of untrusted artifact; reduce token rights"],
