@@ -5,7 +5,7 @@ authorized and forbidden scenarios. This is bounded counterexample checking,
 NOT a complete GitHub expression-language verification or safety proof.
 """
 import re
-from benchmarks.guard_semantics import guard_samples
+from benchmarks.guard_semantics import guard_samples, require_on_every_branch
 
 TMP=chr(36)+"{{ runner.temp }}/incoming/dist"
 TRUSTED_BRANCH=chr(36)+"{{ github.event.workflow_run.head_branch }}"
@@ -59,14 +59,18 @@ def push_failure_is_not_swallowed(step):
 
 def producer_actor_is_guarded(expr):
     ok={"github.actor":"dependabot[bot]"}
-    return guard_samples(expr,ok,[{"github.actor":"arbitrary-contributor"},
-                                  {"github.actor":"dependabot-other[bot]"}])
+    return (guard_samples(expr,ok,[{"github.actor":"arbitrary-contributor"},
+                                   {"github.actor":"dependabot-other[bot]"}]) and
+            require_on_every_branch(expr,{
+                ("eq","github.actor","dependabot[bot]")}))
 
 
 def artifact_change_is_guarded(expr):
     good={"steps.diff.outputs.changed":"true"}
     bad={"steps.diff.outputs.changed":"false"}
-    return guard_samples(expr,good,[bad])
+    return (guard_samples(expr,good,[bad]) and
+            require_on_every_branch(expr,{
+                ("eq","steps.diff.outputs.changed","true")}))
 
 
 def consumer_auth_is_guarded(expr):
@@ -89,7 +93,15 @@ def consumer_auth_is_guarded(expr):
         alt=dict(good)
         alt[k]=bad_value
         deny.append(alt)
-    return guard_samples(expr,good,deny)
+    required={
+        ("same",tuple(sorted(("github.event.workflow_run.head_repository.full_name",
+                              "github.repository")))),
+        ("eq","github.event.workflow_run.actor.login","dependabot[bot]"),
+        ("prefix","github.event.workflow_run.head_branch","dependabot/"),
+        ("eq","github.event.workflow_run.conclusion","success"),
+        ("eq","github.event.workflow_run.event","pull_request"),
+    }
+    return guard_samples(expr,good,deny) and require_on_every_branch(expr,required)
 
 
 def harden(existing,producer,consumer,producer_steps,consumer_steps):
