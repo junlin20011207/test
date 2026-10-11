@@ -14,6 +14,8 @@ import tempfile
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from benchmarks.scan_public import fetch
 from proofcut import inspect
+from benchmarks.repairlab import patch_overlay, patch_metadata
+import yaml
 
 BASE=Path(__file__).resolve().parent
 OUT=BASE.parent/"baseline-results"/"codeql"
@@ -37,7 +39,7 @@ def main():
     reports=[]
     for source_manifest in ("advisory_pairs.json","metadata_pairs.json"):
         data=json.loads((BASE/source_manifest).read_text("utf8"))
-        for state in data["cases"]:
+        for state in [*data["cases"],dict(data["cases"][0],label="candidate_patch")]:
             case_id=source_manifest.removesuffix(".json")+"__"+state["label"]
             with tempfile.TemporaryDirectory(prefix="codeql-actions-pair-") as tmp:
                 root=Path(tmp)
@@ -47,6 +49,11 @@ def main():
                     path=workspace/entry["path"]
                     path.parent.mkdir(parents=True,exist_ok=True)
                     path.write_bytes(raw)
+                if state["label"]=="candidate_patch":
+                    patcher=(patch_overlay if source_manifest=="advisory_pairs.json"
+                             else patch_metadata)
+                    target,patched,patch_info=patcher(workspace)
+                    target.write_text(yaml.safe_dump(patched,sort_keys=False),encoding="utf8")
                 result=inspect(workspace)
                 db=root/"db"
                 sarif=OUT/(case_id+".sarif")
@@ -63,6 +70,7 @@ def main():
                  "revision":state["commit"],"label":state["label"],
                  "codeql_version":version,"query_pack":PACK,
                  "files_sha_verified":len(state["files"]),
+                 "candidate_generated":state["label"]=="candidate_patch",
                  "proofcut_families":result["families"],
                  "codeql_total_alerts":len(alerts),
                  "codeql_artifact_poisoning_alerts":sum("artifact-poisoning" in a for a in alerts),
@@ -72,7 +80,7 @@ def main():
             print(json.dumps(row,ensure_ascii=False))
     (OUT/"summary.json").write_text(json.dumps({
         "version":version,"query_pack":PACK,"states":reports,
-        "interpretation":"Four known historical versions only, not independent held-out cases; no precision/recall claim"},indent=2)+"\n")
+        "interpretation":"Four published historical versions and two generated draft-patch variants; labels are not a held-out data set; no runtime repair validation or precision/recall claim"},indent=2)+"\n")
     return 0
 
 if __name__=="__main__":
