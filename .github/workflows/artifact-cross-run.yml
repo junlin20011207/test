@@ -24,6 +24,7 @@ jobs:
           echo "run_id=$SOURCE_RUN" >> "$GITHUB_OUTPUT"
           if [ -z "$SOURCE_RUN" ]; then
             echo "No prior completed fixture run available; this check is unverified, not passed."
+            exit 2
           else
             echo "Selected completed external run $SOURCE_RUN for read-only artifact download."
           fi
