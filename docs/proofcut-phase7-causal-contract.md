@@ -61,6 +61,14 @@
 
 [真实本地 Git 实验运行、逐例 SHA、分支写入结果](https://github.com/junlin20011207/test/actions/runs/38146425288)。本实验**没有远程授权、没有运行下载代码、没有模拟真实 GitHub 分支保护**；只说明检查和写入的先后关系在这个受控情景中确实改变了 Git 对象状态。
 
+### GitHub 官方执行器中的容错结果交叉验证
+
+新增自有仓库内的 `.github/workflows/step-status-oracle.yml`：在只读无害 Runner 中先执行 `exit 17`，但为该步骤声明 `continue-on-error: true`；下一个步骤直接使用 GitHub 引擎提供的环境插值记录其 `outcome` 和 `conclusion`。
+
+实际结果为 `outcome=failure`、`conclusion=success`，并写入 `baseline-results/temporal-contract/runner-status.json`。这验证了错误掩盖可以改变后续步骤所见到的成功状态，而不是只在模型中人为设定。正式业务流程中是否会错误推进仍取决于下游条件与数据流。
+
+[真实 GitHub Runner 原始日志和 JSON Artifacts](https://github.com/junlin20011207/test/actions/runs/38147016255)。
+
 ## 6. 同源 CodeQL 对照设计
 
 在固定 SHA 的已公开 actions/attest 漏洞提交的实验修复副本中，之前已构造六类业务/授权违约，CodeQL 2.27.2 `actions-security-extended.qls` 对六份均无告警，ContractLab 拒绝了六项。相关证据：<https://github.com/junlin20011207/test/actions/runs/38144674771>。
