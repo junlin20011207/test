@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "study": "GHSL-2026-225 public advisory, no claim of new discovery",
+  "reference": "https://securitylab.github.com/advisories/GHSL-2026-225_actions_attest/",
+  "source": "actions/attest",
+  "cases": [
+    {
+      "label": "vulnerable",
+      "commit": "60c80190bb1a4fb35e5724ede753db5656412b68",
+      "expected_metadata_count": 1,
+      "files": [
+        {
+          "path": ".github/workflows/commit-dist.yml",
+          "sha": "cb0883c383ff55accf8403b853cea21ed5bb9c95",
+          "size": 4460
+        },
+        {
+          "path": ".github/workflows/rebuild-dist.yml",
+          "sha": "317dbb49f7a0d4d3ef61b4eef50898d4f0c71b20",
+          "size": 3512
+        }
+      ]
+    },
+    {
+      "label": "fixed",
+      "commit": "7d8b1cacecb65f487779b3b98fd5296a018d1a1b",
+      "expected_metadata_count": 0,
+      "files": [
+        {
+          "path": ".github/workflows/commit-dist.yml",
+          "sha": "b142a55b064eaaa86187020879701a1318708e93",
+          "size": 4821
+        },
+        {
+          "path": ".github/workflows/rebuild-dist.yml",
+          "sha": "77f3f0558a2c49d64d0de66f3283ab2c10f0185e",
+          "size": 3128
+        }
+      ]
+    }
+  ]
+}
