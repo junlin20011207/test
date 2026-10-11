@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "purpose": "read-only, unlabelled external workflow scan (not security ground truth)",
+  "selected_on": "2026-10-11",
+  "selection": "five preselected mainstream open-source projects; all workflow YAML files at pinned revision",
+  "repositories": [
+    {
+      "name": "cli/cli",
+      "commit": "ec5b512045db67e5a2a4ff4a1b02660b2fb24390"
+    },
+    {
+      "name": "pypa/pip",
+      "commit": "a7002c9771a6c3f0317a4e6b9fbdcd22e643f7b6"
+    },
+    {
+      "name": "pytest-dev/pytest",
+      "commit": "587ebc501ba292539202a1aac3a7f5b0112a08ec"
+    },
+    {
+      "name": "actions/runner",
+      "commit": "67f01c276e0a91d967ba499ce4cdc9a95efa0262"
+    },
+    {
+      "name": "astral-sh/ruff",
+      "commit": "a5aee680b11d2190fbb6a72008047ae281dd2d18"
+    }
+  ]
+}
