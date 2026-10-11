@@ -27,3 +27,14 @@ zizmor：https://docs.zizmor.sh/audits/
 Poutine：https://github.com/boostsecurityio/poutine
 
 **赛事公开评审没有为五项评审维度公布固定权重。** 原创性、完成度、性能、应用价值、文档规范性是评估方向；80 分门槛仅属于自设的 30/25/20/15/10 模拟评分模型，不是官方分数。
+
+
+## Iteration: provenance guards at download-step granularity (2026-10-11)
+
+- Corrected a false-positive class: a privileged `workflow_run` job may have an artifact-download step gated by the *exact* upstream `push` origin check; under the modeled conditions, the untrusted producer event cannot reach that download step.
+- Ambiguous guards (`|| true`, larger expressions) are **not** treated as proof of protection. Exact string matching is intentionally conservative rather than a complete GitHub expressions evaluator.
+- Artifact script execution now requires a path-correlated candidate, and the matcher traverses multiple shell command occurrences. A path match does not prove execution, maliciousness, or attacker control.
+- Verification: GitHub Actions run https://github.com/junlin20011207/test/actions/runs/38133501835 succeeded for commit `3400b6b709a2d34c05eb36aab84a29c7badcae31`.
+- Local clone attempt from sandbox failed because github.com DNS was unavailable; the real cloud CI run, **not** a claimed independent local clone, is the integration evidence.
+- Limitations: no human-labeled real-repository benchmark; no quantitative head-to-head result against zizmor or Poutine; GitHub condition semantics, reusable workflows, artifacts' actual file provenance and secrets/access rights remain partially modeled.
+- Next study priority: blind-labeled repository/workflow pairs, per-category precision and recall, exact matched witness comparison against current zizmor and Poutine, and uncertainty accounting.
