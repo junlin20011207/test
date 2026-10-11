@@ -3,7 +3,7 @@ from pathlib import Path
 import argparse, json, re, shlex, posixpath
 import yaml
 
-UNTRUSTED={"pull_request","pull_request_target","issue_comment","discussion_comment","pull_request_review_comment","issues"}
+UNTRUSTED={"pull_request","pull_request_target","pull_request_review","issue_comment","discussion_comment","pull_request_review_comment","issues"}
 PUSH_GUARD=re.compile(r"""github\.event\.workflow_run\.event\s*==\s*['"]push['"]|['"]push['"]\s*==\s*github\.event\.workflow_run\.event""")
 EXEC=re.compile(r"(?:^|[\s;&|])(?:bash|sh|python\d*|node|source|eval|\.\/|chmod\s+\+x|npm\s+run)",re.I)
 SECRET=re.compile(r"secrets\.(?!GITHUB_TOKEN\b)[A-Z_]\w*",re.I)
