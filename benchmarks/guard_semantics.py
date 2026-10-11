@@ -131,3 +131,58 @@ def guard_samples(condition,accepted,denied):
             not bool(evaluate(syntax,case)) for case in denied)
     except (ValueError,TypeError,IndexError,KeyError):
         return False
+
+
+
+def _atomic_fact(node):
+    """Return only direct, modeled authorization atoms (sufficient, not complete)."""
+    kind=node[0]
+    if kind=="==":
+        a,b=node[1],node[2]
+        if a[0]=="var" and b[0]=="literal":
+            return ("eq",a[1],b[1])
+        if b[0]=="var" and a[0]=="literal":
+            return ("eq",b[1],a[1])
+        if a[0]=="var" and b[0]=="var":
+            return ("same",tuple(sorted((a[1],b[1]))))
+    if kind=="startsWith":
+        a,b=node[1],node[2]
+        if a[0]=="var" and b[0]=="literal":
+            return ("prefix",a[1],b[1])
+    return None
+
+
+def guaranteed_atoms(tree):
+    """Conservative conjunction facts true on EVERY satisfiable OR branch.
+
+    None indicates a provably impossible Boolean branch; an empty set means
+    the expression can be true without proving any modeled atomic facts.
+    This is deliberately a sufficient-condition checker rather than a
+    complete theorem prover of GitHub Actions expression semantics.
+    """
+    kind=tree[0]
+    if kind=="bool":
+        return set() if tree[1] else None
+    if kind=="and":
+        left,right=guaranteed_atoms(tree[1]),guaranteed_atoms(tree[2])
+        return None if left is None or right is None else left|right
+    if kind=="or":
+        left,right=guaranteed_atoms(tree[1]),guaranteed_atoms(tree[2])
+        if left is None:return right
+        if right is None:return left
+        return left&right
+    atom=_atomic_fact(tree)
+    return {atom} if atom is not None else set()
+
+
+def require_on_every_branch(condition,required):
+    """Prove specific authorization predicates appear in all viable branches.
+
+    Unmodeled syntax and semantic equivalents are rejected rather than guessed.
+    No claim of full symbolic execution, satisfiability or GitHub equivalence.
+    """
+    try:
+        atoms=guaranteed_atoms(parse(condition))
+        return atoms is not None and set(required).issubset(atoms)
+    except (ValueError,TypeError,IndexError):
+        return False
