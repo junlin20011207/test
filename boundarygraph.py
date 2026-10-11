@@ -115,6 +115,9 @@ def analyze(root="."):
                     secrets=bool(SECRET.search(str(job)+str(consumer["raw"].get("env",{}))))
                     if not privileged and not secrets:continue
                     for i in downloads:
+                        if protected(steps[i].get("if","")):
+                            guarded.append({"consumer":consumer["path"],"job":str(jobname),"producer":producer["path"],"step":i,"reason":"artifact transfer gated to trusted push origin"})
+                            continue
                         possible_exec=artifact_execution_evidence(steps,i)
                         findings.append({
                           "rule":"BG-CROSS-001","severity":"critical" if possible_exec else "high",
