@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 import sys
 import tempfile
+import time
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
@@ -28,8 +30,17 @@ def fetch(repo, revision, entry):
         raise ValueError("unsafe relative path")
     url="https://raw.githubusercontent.com/"+repo+"/"+revision+"/"+quote(name,safe="/")
     req=Request(url,headers={"User-Agent":"BoundaryGraph-ReadOnly-Corpus-Experiment"})
-    with urlopen(req,timeout=30) as response:
-        raw=response.read(MAX_BYTES+1)
+    for attempt in range(3):
+        try:
+            with urlopen(req,timeout=30) as response:
+                raw=response.read(MAX_BYTES+1)
+            break
+        except (HTTPError,URLError,TimeoutError,OSError) as exc:
+            retryable=(not isinstance(exc,HTTPError) or exc.code in
+                       (408,429,500,502,503,504))
+            if not retryable or attempt==2:
+                raise
+            time.sleep(0.5*(attempt+1))
     if len(raw)>MAX_BYTES:
         raise ValueError("file exceeds 500k byte ceiling")
     git_blob=hashlib.sha1(b"blob "+str(len(raw)).encode()+b"\x00"+raw).hexdigest()
