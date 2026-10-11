@@ -19,11 +19,15 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Validate and scan all 97 pinned unseen YAML files
         run: python -m benchmarks.heldout_scan
+      - name: Analyze previously targeted cross-run workflow examples separately
+        run: python -m benchmarks.generalization_cohort
       - name: Keep read-only cross-project reports including incomplete failures
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: proofcut-five-repo-holdout
-          path: baseline-results/heldout/
+          path: |
+            baseline-results/heldout/
+            baseline-results/targeted-scope/
           retention-days: 14
           if-no-files-found: warn
