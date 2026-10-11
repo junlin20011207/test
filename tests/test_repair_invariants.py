@@ -34,7 +34,9 @@ def prepared():
     consumer={"on":{"workflow_run":{"workflows":["Rebuild dist"]}},
               "permissions":{"contents":"read"},
               "jobs":{"commit":{"permissions":{"contents":"write"},
-                                 "if":("github.event.workflow_run.head_repository.full_name == github.repository && "
+                                 "if":("github.event.workflow_run.conclusion == 'success' && "
+                                       "github.event.workflow_run.event == 'pull_request' && "
+                                       "github.event.workflow_run.head_repository.full_name == github.repository && "
                                        "github.event.workflow_run.actor.login == 'dependabot[bot]' && "
                                        "startsWith(github.event.workflow_run.head_branch, 'dependabot/')"),
                                  "steps":[downloader,checker,checkout,verify,apply,push]}}}
