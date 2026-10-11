@@ -1,0 +1,62 @@
+name: BoundaryGraph Independent Baselines
+on:
+  push:
+    branches: [main, boundarygraph-baselines]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install tools
+        run: |
+          python -m pip install "PyYAML>=6,<7" "zizmor>=1"
+          python benchmarks/generate_cases.py
+          zizmor --version
+      - name: Run BoundaryGraph and zizmor identically
+        run: |
+          set +e
+          mkdir -p baseline-results
+          for case in risk guarded same_run read_only; do
+            echo "--- case: $case (BoundaryGraph) ---"
+            python boundarygraph.py "benchmarks/cases/$case" --json > "baseline-results/$case.boundarygraph.json" 2> "baseline-results/$case.boundarygraph.err"
+            echo "boundarygraph_exit=$?"
+            echo "--- case: $case (zizmor) ---"
+            zizmor --offline --format=json-v1 "benchmarks/cases/$case" > "baseline-results/$case.zizmor.json" 2> "baseline-results/$case.zizmor.err"
+            echo "zizmor_exit=$?"
+          done
+          python benchmarks/summarize.py baseline-results boundarygraph zizmor
+          exit 0
+      - name: Run Poutine in isolated read-only Docker mounts
+        run: |
+          set +e
+          echo "--- Poutine image pull ---"
+          docker pull ghcr.io/boostsecurityio/poutine:latest
+          rc=$?
+          echo "poutine_pull_exit=$rc"
+          if [ "$rc" -eq 0 ]; then
+            for case in risk guarded same_run read_only; do
+              echo "--- case: $case (Poutine) ---"
+              docker run --rm -v "$PWD/benchmarks/cases/$case:/repo:ro" -w /repo \
+                --network=none -e POUTINE_DISABLE_VERSION_CHECK=1 \
+                ghcr.io/boostsecurityio/poutine:latest \
+                analyze_local . --format json --disable-version-check \
+                > "baseline-results/$case.poutine.json" 2> "baseline-results/$case.poutine.err"
+              echo "poutine_exit=$?"
+            done
+          fi
+          python benchmarks/summarize.py baseline-results poutine
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boundarygraph-strong-baselines
+          path: baseline-results/
+          retention-days: 14
