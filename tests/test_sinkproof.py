@@ -86,3 +86,14 @@ def test_proof_independent_of_late_data_validation(tmp_path):
     """Validating data after loading a workspace helper is too late."""
     report=fixture(tmp_path)
     assert report["count"]==1
+
+
+def test_issue_comment_alone_does_not_prove_producer_workflow_control(tmp_path):
+    fixture(tmp_path)
+    p=tmp_path/".github"/"workflows"/"producer.yml"
+    obj=yaml.load(p.read_text("utf8"),Loader=yaml.BaseLoader)
+    obj["on"]=["issue_comment"]
+    p.write_text(yaml.safe_dump(obj,sort_keys=False),encoding="utf8")
+    r=sink_proofs(tmp_path)
+    assert r["count"]==0
+    assert any("fork-modifiable" in x["reason"] for x in r["gaps"])
