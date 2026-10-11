@@ -1,5 +1,7 @@
 # Controlled Differential Study: BoundaryGraph vs zizmor vs Poutine
 
+> **更正说明（2026-10-11）：** 下文原始四组对照案例的 Producer 没有声明上传 Artifact，仅测试了消费者侧下载配置。已在 `benchmarks/generate_cases.py` 中补充显式无害上传声明，修复后的 [三工具基线重跑](https://github.com/junlin20011207/test/actions/runs/38136639847) 成功。修正版 BoundaryGraph 对四例分别报告 1/0/0/0 条已声明路径；zizmor 1.30.1 每例 3 条规则告警（主要是 dangerous-triggers、unpinned-uses），Poutine 每例 1 条依赖规则告警。告警语义不同，不能据数量宣称更优。详见 [生产者上传来源验证](publication-evidence-study.md)。
+
 Study date: 2026-10-11. This is an illustrative synthetic control study, **not** a real-world detection rate.
 
 ## Provenance and reproducibility
