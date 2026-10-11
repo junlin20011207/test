@@ -32,12 +32,16 @@ def generate(codeql=False):
         target,patched,_=patch_metadata(work)
         target.write_text(yaml.safe_dump(patched,sort_keys=False),encoding="utf8")
         base=load_from_workspace(work)
-        assert base["passed"] and not base["ref_update_assurance"]["stronger_pattern_passed"]
+        assert base["passed"] and base["total_count"]==16
+        assert not base["ref_update_assurance"]["stronger_pattern_passed"]
+        weak_in_strict=load_from_workspace(work,require_ref_cas=True)
+        assert not weak_in_strict["passed"] and not weak_in_strict["checks"]["remote_ref_expected_oid_cas"]
         stronger=upgrade_push_to_expected_ref_cas(patched)
         target.write_text(yaml.safe_dump(patched,sort_keys=False),encoding="utf8")
-        improved=load_from_workspace(work)
+        improved=load_from_workspace(work,require_ref_cas=True)
         assert stronger["stronger_pattern_passed"]
-        assert improved["passed"] and improved["ref_update_assurance"]["stronger_pattern_passed"],improved
+        assert improved["passed"] and improved["total_count"]==17
+        assert improved["checks"]["remote_ref_expected_oid_cas"],improved
         after_codeql=None
         if codeql:
             from benchmarks.codeql_comparison import BINARY,PACK,call
@@ -60,7 +64,8 @@ def generate(codeql=False):
             "source_repo":manifest["source"],"public_historical_commit":selected["commit"],
             "prior_repair":{"contract_passed":base["passed"],
                             "obligation_count":base["total_count"],
-                            "remote_ref_cas":base["ref_update_assurance"]["tier"]},
+                            "remote_ref_cas":base["ref_update_assurance"]["tier"],
+                            "strict_mode_rejected":not weak_in_strict["passed"]},
             "opt_in_cas_candidate":{"contract_passed":improved["passed"],
                                     "obligation_count":improved["total_count"],
                                     "remote_ref_cas":improved["ref_update_assurance"],
