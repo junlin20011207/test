@@ -32,7 +32,7 @@ def inspect_push_step(step,job=None):
             str(step.get("continue-on-error",False)).lower()=="false"
             and str(job.get("continue-on-error",False)).lower()=="false"
             and declared_shell in ("bash",)
-            and not any(re.search(r"\bset\s+\+e\b|(?:\|\|\s*true)|\bgit\s+push\s+--force\b",l)
+            and not any(re.search(r"\bset\s+\+e\b|(?:\|\|\s*true)|\bgit\s+push\s+--force(?:\s|$)",l)
                         for l in statements)),
         "ancestor_precondition_before_push":(
             ANCESTRY in statements and LEASE in statements
