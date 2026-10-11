@@ -1,5 +1,7 @@
 # Pinned External Workflow Study — 2026-10-11
 
+> **更新说明（2026-10-11）：** 本文保留的是首次外部扫描的 8 条宽口径候选记录。补充生产者上传证据后，同一批样本重新归类为 **3 条匹配的静态上传声明路径 + 5 条条件上传、来源尚未完全证实的候选**。请以 [更新版研究报告](publication-evidence-study.md) 和相应 CI 证据为准。以下历史的“8 条”不是确认的漏洞数量。
+
 ## Scope and design
 
 This is a **read-only reconnaissance study**, not vulnerability verification or a measurement of precision/recall. Source of truth: `benchmarks/public_manifest.json` records immutable commit IDs, exact workflow paths, expected byte size, and Git blob SHA-1; `benchmarks/scan_public.py` downloads only those files, checks Git blob hashes, and parses their YAML as data. No downloaded workflow or artifact is executed.
