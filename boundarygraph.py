@@ -201,6 +201,9 @@ def analyze(root="."):
                         findings.append({
                           "rule":"BG-CROSS-001","severity":"critical" if possible_exec else "high",
                           "producer":producer["path"],"consumer":consumer["path"],"job":str(jobname),
+                          "download_step":i,
+                          "download_action":str(steps[i].get("uses","shell")),
+                          "artifact_name":str((steps[i].get("with") or {}).get("name","")) if isinstance(steps[i].get("with") or {},dict) else "",
                           "witness":["untrusted events "+",".join(bad),"workflow_run "+str(name),
                                     "explicit upstream artifact transfer",permission+" secret_refs="+str(secrets),
                                     "downloaded content execution: "+("path-correlated candidate" if possible_exec else "not established")],
