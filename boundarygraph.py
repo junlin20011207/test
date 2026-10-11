@@ -75,8 +75,8 @@ def artifact_execution_evidence(steps, download_index):
         if not isinstance(step,dict):continue
         command=str(step.get("run",""))
         if not command:continue
-        script=re.search(r"(?:^|[\\s;&|])(?:bash|sh|python\\d*|node|source)\\s+([^\\s;&|]+)",command,re.I)
-        if script and script.group(1).strip("'\\\"").removeprefix("./").startswith(normalized+"/"):
+        script=re.search(r"(?:^|[\s;&|])(?:bash|sh|python\d*|node|source)\s+([^\s;&|]+)",command,re.I)
+        if script and script.group(1).strip("'\\"").removeprefix("./").startswith(normalized+"/"):
             return True
     return False
 
