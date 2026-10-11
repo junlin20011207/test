@@ -208,8 +208,11 @@ def main():
         "important":"do NOT automatically merge patches or claim security/functionality correctness"},
         ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     for r in reports:
+        contract=r["machine_checked_producer_consumer_contract"]
+        score=(str(contract.get("passed_count"))+"/"+str(contract.get("total_count"))
+               if contract["passed"] is not None else "not-applicable")
         print(r["family"],r["original_model_witness"],"->",r["draft_model_witness"],
-              "source",r["source_sha"][:12])
+              "source",r["source_sha"][:12],"repair_contract_checks",score)
     return 0
 
 
