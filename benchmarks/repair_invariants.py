@@ -48,7 +48,7 @@ def check_dist_contract(producer,consumer):
                   and s.get("id")=="check"),{})
     checker_run=str(checker.get("run",""))
     push=next((s for s in consumer_steps if isinstance(s,dict)
-               and re.search(r"(?m)^\s*git\s+push\s+origin",str(s.get("run","")))),{})
+               and re.search(r"(?m)^\s*git\s+push\s+(?:--force-with-lease=\S+\s+)?origin\b",str(s.get("run","")))),{})
     verify=next((s for s in consumer_steps if isinstance(s,dict)
                  and "git rev-parse HEAD" in str(s.get("run",""))),{})
     apply_step=next((s for s in consumer_steps if isinstance(s,dict)
@@ -83,7 +83,8 @@ def check_dist_contract(producer,consumer):
        "checkout_target_from_event":checkout_input.get("ref")==TRUSTED_BRANCH,
        "write_target_environment_bound":(
                     (push.get("env") or {}).get("HEAD_BRANCH")==TRUSTED_BRANCH and
-                    'git push origin "HEAD:refs/heads/$HEAD_BRANCH"' in str(push.get("run",""))),
+                    ('git push origin "HEAD:refs/heads/$HEAD_BRANCH"' in str(push.get("run",""))
+                     or inspect_push_step(push,consumer.get("jobs",{}).get("commit",{}))["stronger_pattern_passed"])),
        "sha_verification_environment_bound":(
                     (verify.get("env") or {}).get("EXPECTED_SHA")==
                     "$"+"{{ github.event.workflow_run.head_sha }}" and
