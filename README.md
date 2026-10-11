@@ -41,6 +41,15 @@
 
 新增 `benchmarks/assurance_certificate.py` 产生 **13 项跨工作流修复合约 + 13 个反证 + 3 类必要谓词证据**的 JSON 报告，由真实云端 GitHub Actions 归档。实际 GitHub Artifact v4 跨运行读取与受控业务文件验证保留。**仅支持明确的 GitHub 表达式语法子集，未建模情况不可冒称安全。**
 
+## 第六阶段：真实 GitHub 表达式语义校准与跨工具契约差异（2026-10-11）
+
+[**第六阶段完整中文实验报告**](docs/proofcut-phase6-platform-oracle.md) ｜ [**独立研究 PR #8**](https://github.com/junlin20011207/test/pull/8)
+
+- 使用**真实 GitHub Actions 表达式引擎**校准受限条件解释器：大小写无关比较、字符串单引号转义、`&&`/`||` 操作数返回、布尔/字符串宽松等值比较和 `startsWith` 类型转换。**19/19** 项 GitHub 官方引擎直接对照一致；完整自动化测试 **274/274** 通过。
+- [**官方 GitHub 表达式对照**](https://github.com/junlin20011207/test/actions/runs/38144186550)、[**操作数返回对照**](https://github.com/junlin20011207/test/actions/runs/38144037501)、[**测试记录**](https://github.com/junlin20011207/test/actions/runs/38144186462)。
+- [**官方 CodeQL 2.27.2 同源对照**](https://github.com/junlin20011207/test/actions/runs/38144366160)：一份历史修复草案及六种单点违约修改逐例执行 `security-extended`；ContractLab 对六个修改 **6/6 拒绝**，CodeQL 对六个变体均为 **0 条**漏洞规则告警。这说明特定**业务/安全契约验收**与通用漏洞扫描具有互补性，不意味着 CodeQL 漏检了六个漏洞。
+- 局限：例子全部来自同一项已披露历史项目，违约修改与表达式样本由研究者设计，不能证明未知真实项目的效果、完整平台语义兼容性、首创性或高水平获奖能力。
+
 ## 快速复现
 
 ```bash
