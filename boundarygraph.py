@@ -175,7 +175,7 @@ def publication_match(producer, download_step):
         params={}
     requested=str(params.get("name","")).strip()
     pattern=str(params.get("pattern","")).strip()
-    action=str(download_step.get("uses","")).lower()
+    action=str(download_step.get("uses","shell")).lower()
     if action=="shell":
         commands=shell_commands(download_step.get("run",""))
         if commands and any(gh_download_source(t) is True for t in commands):
