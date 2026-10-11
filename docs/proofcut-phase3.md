@@ -34,6 +34,26 @@
 
 首轮修复草案在静态 ProofCut 分析下均使目标路径变为零；CodeQL 对 SPIRE 草案为 0 条，对 actions/attest 草案**仍有 3 条中危代码注入告警**。将分支名与 head SHA 改为从经过来源约束的事件上下文、再经 Shell 环境变量引用后，第二轮曾降至 1 条中危。**这说明单一规则清零不等于安全修复完成，必须保留独立扫描残余报告。**
 
+### 经过三次反向修复迭代后的最终 CodeQL 六状态验证
+
+针对 actions/attest 的修复草案，首轮即便 ProofCut 路径清零，CodeQL 仍产生 3 条 `actions/code-injection/medium`；在消费者端将分支与 SHA 的 Shell 插值迁移至环境变量后，降至 1 条；CodeQL 的 SARIF 明确指出残余来源是**上游 `rebuild-dist.yml` 第 79 行直接插入 `github.event.pull_request.head.ref`**。
+
+因此，最终草案联动变更了两端的数据契约：移除生产者不再使用的元数据捕获步骤；上传内容仅保留 `dist/`；消费者将下载路径更改为 `runner.temp/incoming/dist` 并改写存在性检查；事件来源仍附加同仓库 + Dependabot 身份限制；Git 操作仍经 Shell 环境变量引用分支名及 SHA。此草案仅适用于这项已披露历史工作流，不是泛化的所有仓库修复器。
+
+**[官方 CodeQL 2.27.2 六状态最终对照 CI](https://github.com/junlin20011207/test/actions/runs/38139298116)**：
+
+| 案例状态 | ProofCut 目标路径 | CodeQL security-extended 全部告警 |
+| --- | ---: | ---: |
+| SPIRE 修复前 | 1 | 1（Artifact Poisoning） |
+| SPIRE 官方修复后 | 0 | 0 |
+| SPIRE ProofCut 修复草案 | 0 | 0 |
+| actions/attest 修复前 | 1 | 5（Code Injection、Untrusted Checkout） |
+| actions/attest 官方修复后 | 0 | 0 |
+| actions/attest ProofCut 最终修复草案 | 0 | 0 |
+
+**解读边界：** 两项草案的相关静态见证消失且 CodeQL 全套 security-extended 在这两份临时历史工作流草案上没有剩余告警，是独立工具交叉验证；**仍不是运行时功能保持、所有未建模风险消除或安全修复正式认证**。尤其最终修复思路与原项目已发布的修复有显著重合，不能将其声称为独立发明。
+
+
 [CodeQL 官方与 ProofCut 四状态原始对照运行](https://github.com/junlin20011207/test/actions/runs/38138516024)；
 [第一版六状态（含修复草案）运行](https://github.com/junlin20011207/test/actions/runs/38138750953)；
 [改进草案六状态运行](https://github.com/junlin20011207/test/actions/runs/38138914035)。
