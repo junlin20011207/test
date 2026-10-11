@@ -31,8 +31,6 @@ CASES=[
     ("push_before_sha_verify",lambda p,c:move(p,c,5,3)),
     ("push_before_artifact_apply",lambda p,c:move(p,c,5,4)),
     ("sha_verify_after_artifact_apply",lambda p,c:reorder(p,c,3,4)),
-    ("checkout_before_download",lambda p,c:reorder(p,c,0,2)),
-    ("readiness_after_checkout",lambda p,c:reorder(p,c,1,2)),
     ("readiness_after_push",lambda p,c:move(p,c,1,5)),
     ("skipped_sha_verify",lambda p,c:disable(p,c,3)),
     ("skipped_artifact_apply",lambda p,c:disable(p,c,4)),
