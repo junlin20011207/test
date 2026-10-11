@@ -25,6 +25,13 @@ def inspect_push_step(step,job=None):
     env=step.get("env") or {}
     defaults=(job.get("defaults") or {}).get("run") or {}
     declared_shell=step.get("shell",defaults.get("shell","bash"))
+    # The research repair has a known straight-line final write segment.
+    # Both commands must be the last two non-comment commands in the script:
+    # seeing matching text inside a never-taken if/heredoc is not evidence.
+    command_tail_ok=(len(statements)>=2 and statements[-2:]==[ANCESTRY,LEASE])
+    unsafe_shell_modes=any(re.search(
+        r"(?:^|[;&| ]+)set\s+(?:\+e|\+o\s+errexit)(?:\s|$)|(?:\|\|\s*(?:true|:))(?:\s|$)|\bgit\s+push\s+--force(?:\s|$)",
+        line) for line in statements)
     checks={
         "trusted_branch_bound":env.get("HEAD_BRANCH")==EXPECTED_REF,
         "source_sha_bound":env.get("EXPECTED_SHA")==EXPECTED_SHA,
@@ -32,11 +39,11 @@ def inspect_push_step(step,job=None):
             str(step.get("continue-on-error",False)).lower()=="false"
             and str(job.get("continue-on-error",False)).lower()=="false"
             and declared_shell in ("bash",)
-            and not any(re.search(r"\bset\s+\+e\b|(?:\|\|\s*true)|\bgit\s+push\s+--force(?:\s|$)",l)
-                        for l in statements)),
+            and not unsafe_shell_modes),
         "ancestor_precondition_before_push":(
-            ANCESTRY in statements and LEASE in statements
-            and statements.index(ANCESTRY)<statements.index(LEASE)),
+            command_tail_ok
+            and statements.count(ANCESTRY)==1
+            and statements.count(LEASE)==1),
         "explicit_expected_ref_lease":(
             statements.count(LEASE)==1
             and statements.count(PLAIN)==0
