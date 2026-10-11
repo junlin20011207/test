@@ -93,9 +93,10 @@ def check_dist_contract(producer,consumer):
                     "startsWith(github.event.workflow_run.head_branch" in str(consumer_if)),
     }
     obligations=harden(obligations,producer,consumer,producer_steps,consumer_steps)
-    temporal=temporal_contract(consumer_steps)
+    temporal=temporal_contract(consumer_steps,consumer.get("jobs",{}).get("commit",{}))
     obligations["temporal_order_and_dependencies"]=temporal["temporal_order_and_dependencies"]
     obligations["critical_step_failure_propagation"]=temporal["critical_step_failure_propagation"]
+    obligations["critical_execution_context"]=temporal["critical_execution_context"]
     return {"status":"bounded_semantic_and_causal_contract_checks",
             "passed":all(obligations.values()),
             "passed_count":sum(obligations.values()),
