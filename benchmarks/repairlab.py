@@ -97,7 +97,7 @@ def patch_metadata(workspace):
     if len(builds)!=original_count-1:
         raise ValueError("producer has no unique metadata capture step")
     publisher=next((s for s in builds if re.fullmatch(
-        r"actions/upload-artifact@[^\\s]+",str(s.get("uses","")))),None)
+        r"actions/upload-artifact@[^\s]+",str(s.get("uses","")))),None)
     if not publisher:
         raise ValueError("producer uploader unknown")
     publisher["with"]["path"]="dist/"
@@ -108,7 +108,7 @@ def patch_metadata(workspace):
     producer_path.write_text(yaml.safe_dump(producer,sort_keys=False),encoding="utf8")
 
     downloader=next((s for s in steps if re.fullmatch(
-        r"actions/download-artifact@[^\\s]+",str(s.get("uses","")))),None)
+        r"actions/download-artifact@[^\s]+",str(s.get("uses","")))),None)
     checker=next((s for s in steps if s.get("id")=="check"),None)
     if not downloader or not checker:
         raise ValueError("consumer download/presence-check unknown")
