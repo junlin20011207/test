@@ -4,6 +4,8 @@ Not GitHub's complete expression language. Unsupported symbols or functions
 remain unknown and are never accepted as authorization evidence.
 """
 import re
+import json
+import math
 
 TOKEN=re.compile(r"""\s*(?:(&&|\|\||==|!=|[(),!])|('(?:''|[^'])*'|"(?:\\.|[^"\\])*")|([a-zA-Z_][\w.]*))""")
 
@@ -101,6 +103,31 @@ def parse(source):
     return result
 
 
+def _numeric_for_loose_equality(value):
+    """GitHub mixed Boolean/string equality: JSON numeric strings or NaN."""
+    if isinstance(value,bool):
+        return int(value)
+    if isinstance(value,str):
+        if not value:
+            return 0
+        try:
+            parsed=json.loads(value)
+        except (ValueError,TypeError):
+            return math.nan
+        if isinstance(parsed,(int,float)) and not isinstance(parsed,bool):
+            return parsed
+        return math.nan
+    raise ValueError("unsupported loose comparison value type")
+
+
+def _string_for_prefix(value):
+    if isinstance(value,bool):
+        return "true" if value else "false"
+    if isinstance(value,str):
+        return value
+    raise ValueError("unmodeled startsWith coercion")
+
+
 def _truthy(value):
     """Subset of GitHub truthiness: documented Boolean and string values."""
     if isinstance(value,bool):
@@ -121,8 +148,8 @@ def evaluate(tree,values):
     if kind=="startsWith":
         left=evaluate(tree[1],values)
         right=evaluate(tree[2],values)
-        if not isinstance(left,str) or not isinstance(right,str):
-            raise ValueError("startsWith expects strings")
+        left=_string_for_prefix(left)
+        right=_string_for_prefix(right)
         return left.casefold().startswith(right.casefold())
     if kind=="not":
         return not _truthy(evaluate(tree[1],values))
@@ -137,6 +164,8 @@ def evaluate(tree,values):
         right=evaluate(tree[2],values)
         if isinstance(left,str) and isinstance(right,str):
             same=left.casefold()==right.casefold()
+        elif isinstance(left,str)!=isinstance(right,str):
+            same=_numeric_for_loose_equality(left)==_numeric_for_loose_equality(right)
         else:
             same=left==right
         return same if kind=="==" else not same
