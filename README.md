@@ -2,6 +2,18 @@
 
 中国研究生网络安全创新大赛创意作品赛方向的**防御性研究原型**。检查 GitHub Actions 工作流之间是否存在“低信任事件 → 上游工作流 → 跨运行 Artifact → 下游高权限 Job”的**潜在路径**，并给出可复核的见证链和修复建议。
 
+## 第二阶段实验：BoundaryGraph ProofCut（研究分支）
+
+在原跨工作流传递证据分析之上，新增两条**汇点级、证据受限**的路径检测：
+1. `sinkproof.py`：上游可受分叉 PR 影响的已声明 Artifact → 具有权限的下游 Job → 覆盖可信检出工作区 → 随后加载本地模块。
+2. `metadataproof.py`：工件元数据 `head-ref` → 工作流输出 → 具有写权限的 Checkout 和 Git Push 目标。
+
+统一入口：`python proofcut.py . --json`；详细技术说明和数据见 [第二阶段报告](docs/proofcut-phase2.md)。
+
+已针对 GitHub Security Lab **2026 年公开披露**的两项不同类型漏洞进行固定 SHA 的修复前/后静态复验，并执行 9 种源码级反事实变体。所有历史 YAML 仅被读取，不执行。**这不是首次发现漏洞，也不是证明优于 CodeQL。**
+
+独立 GitHub 研究 PR：[ProofCut #4](https://github.com/junlin20011207/test/pull/4)。
+
 ## 快速复现
 
 ```bash
