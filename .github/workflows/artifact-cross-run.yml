@@ -1,0 +1,59 @@
+name: ProofCut Cross-Run Read-Only Artifact Contract
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  cross-run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Find a completed fixture-producing run
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOURCE_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/artifact-contract.yml/runs?per_page=20" --jq '.workflow_runs[] | select(.status=="completed" and .conclusion=="success") | .id' | head -n1 || :)
+          echo "run_id=$SOURCE_RUN" >> "$GITHUB_OUTPUT"
+          if [ -z "$SOURCE_RUN" ]; then
+            echo "No prior completed fixture run available; this check is unverified, not passed."
+            exit 2
+          else
+            echo "Selected completed external run $SOURCE_RUN for read-only artifact download."
+          fi
+      - name: Download matching artifact from a different workflow run
+        if: steps.source.outputs.run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: proofcut-dist-fixture
+          run-id: ${{ steps.source.outputs.run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/incoming/dist
+      - name: Assert cross-run artifact exact directory semantics
+        if: steps.source.outputs.run_id != ''
+        env:
+          SOURCE_RUN_ID: ${{ steps.source.outputs.run_id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$SOURCE_RUN_ID" = "$GITHUB_RUN_ID" ]; then
+            echo "Source must be a different workflow run." >&2
+            exit 2
+          fi
+          python benchmarks/artifact_runtime_contract.py dist --workspace "$GITHUB_WORKSPACE" --temp "$RUNNER_TEMP"
+          echo "Cross-run source run ID: $SOURCE_RUN_ID"
+      - name: Publish cross-run contract evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-cross-run-evidence
+          path: baseline-results/runtime-contract/
+          retention-days: 4
+          if-no-files-found: warn

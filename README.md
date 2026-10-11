@@ -23,6 +23,16 @@
 
 竞赛创新性限制：GitHub CodeQL 已能识别测试中的漏洞，2026 年 GitHub Agentic Autofix 已公开支持自动补丁与 CodeQL 重扫。因此当前可验证的进展是**特定跨信任边界修复约束与证据可复核性**，并非新漏洞首发或证明检测/修复能力优于成熟工具。
 
+## 第四阶段：真实跨运行工件契约验证（2026-10-11）
+
+- [第四阶段中文研究报告](docs/proofcut-phase4-runtime-contract.md)：将研究焦点从“静态告警清零”推进到**跨工作流来源—消费者数据契约与受控业务保持性验证**。
+- [真实 Artifact v4 端到端实验](https://github.com/junlin20011207/test/actions/runs/38140693573)：使用无害工件验证覆盖工作区、隔离路径、Python/Node.js JSON 读取、官方 `dist/` 解压布局和本地 Git 分支数据提交。
+- [真实跨运行只读下载](https://github.com/junlin20011207/test/actions/runs/38140303951)：从另一条已完成 GitHub Run 读取具名工件，校验运行 ID、SHA/文件内容及目录。
+- [178 项 Pytest 通过](https://github.com/junlin20011207/test/actions/runs/38140693525)：包含 13 项修复契约义务及单独破坏条件的负例。该结果仅适用于自建测试集。
+- 历史 SPIRE 与 actions/attest 的修复草案由原 [CodeQL 2.27.2 复验](https://github.com/junlin20011207/test/actions/runs/38139298116) 支持，但尚未在第三方仓库部署；最新研究仍不宣称漏洞首发或 CodeQL 检测覆盖优势。
+
+[第四阶段代码 PR #6](https://github.com/junlin20011207/test/pull/6)（独立草稿，未合并 `main`）。
+
 ## 快速复现
 
 ```bash

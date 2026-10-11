@@ -13,6 +13,7 @@ import yaml
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from benchmarks.scan_public import fetch
 from proofcut import inspect
+from benchmarks.repair_invariants import load_from_workspace
 
 ROOT=Path(__file__).parent
 OUT=ROOT.parent/"baseline-results"/"repairlab"
@@ -162,6 +163,11 @@ def run_one(manifest_name,case_label,patcher,family):
         if list(original["jobs"])!=list(patched["jobs"]):
             raise AssertionError("job structure changed")
         target.write_text(yaml.safe_dump(patched,sort_keys=False),encoding="utf8")
+        contract=(load_from_workspace(workspace) if family=="artifact_metadata_to_git_write"
+                  else {"passed":None,"checks":{},"scope":"non-dist repair has separate transfer test"})
+        if contract["passed"] is False:
+            raise AssertionError("producer-consumer contract failed: "+
+                                 str([k for k,v in contract["checks"].items() if not v]))
         after=inspect(workspace)
         diff="".join(difflib.unified_diff(
             old_text.splitlines(True),target.read_text("utf8").splitlines(True),
@@ -186,6 +192,7 @@ def run_one(manifest_name,case_label,patcher,family):
         "draft_model_witness":after["families"][family],
         "event_job_permissions_stable":True,
         "patch_details":desc,
+        "machine_checked_producer_consumer_contract":contract,
         "limitation":"static candidate only; this does not prove runtime functionality or safe deploy",
     }
 
@@ -201,8 +208,11 @@ def main():
         "important":"do NOT automatically merge patches or claim security/functionality correctness"},
         ensure_ascii=False,indent=2)+"\n",encoding="utf8")
     for r in reports:
+        contract=r["machine_checked_producer_consumer_contract"]
+        score=(str(contract.get("passed_count"))+"/"+str(contract.get("total_count"))
+               if contract["passed"] is not None else "not-applicable")
         print(r["family"],r["original_model_witness"],"->",r["draft_model_witness"],
-              "source",r["source_sha"][:12])
+              "source",r["source_sha"][:12],"repair_contract_checks",score)
     return 0
 
 
