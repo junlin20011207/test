@@ -71,6 +71,11 @@ def main():
         reports.append({"repo":repo,"commit":revision,"stratum":source.get("stratum","unspecified"),"expected":len(source["files"]),
                         "scanned":downloaded,"findings":len(result["findings"]),
                         "unknowns":len(result["unknowns"]),"fetch_errors":len(errors)})
+        for finding in result["findings"][:25]:
+            producer=Path(finding["producer"]).name
+            consumer=Path(finding["consumer"]).name
+            print(f"  UNLABELLED {finding['severity']}: {producer} -> {consumer}, job={finding['job']}; "
+                  f"witness={finding['witness'][-2:]}")
         print(f"{repo}@{revision[:12]} ({source.get('stratum','unspecified')}): {downloaded}/{len(source['files'])} verified, "
               f"{len(result['findings'])} unlabelled path candidates, "
               f"{len(result['unknowns'])} unknowns, {len(errors)} fetch errors")
