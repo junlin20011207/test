@@ -82,6 +82,43 @@ def patch_metadata(workspace):
     verify["env"]=dict(verify.get("env") or {},
                        EXPECTED_SHA="$"+"{{ github.event.workflow_run.head_sha }}")
     verify["run"]=str(verify["run"]).replace(old_head_sha,"$EXPECTED_SHA")
+    # The producer still interpolates the pull-request branch directly into
+    # an executable shell expression. The consumer no longer needs this
+    # metadata: remove the producer metadata step and adjust artifact layout
+    # and downstream presence check together as an explicit data contract.
+    producer_path=workspace/".github/workflows/rebuild-dist.yml"
+    producer=read_yaml(producer_path)
+    original_producer_trigger=producer["on"]
+    original_producer_permissions=producer.get("permissions")
+    original_producer_jobs=list(producer["jobs"])
+    builds=producer["jobs"]["rebuild"]["steps"]
+    original_count=len(builds)
+    builds[:]=[s for s in builds if s.get("name")!="Record PR context"]
+    if len(builds)!=original_count-1:
+        raise ValueError("producer has no unique metadata capture step")
+    publisher=next((s for s in builds if re.fullmatch(
+        r"actions/upload-artifact@[^\\s]+",str(s.get("uses","")))),None)
+    if not publisher:
+        raise ValueError("producer uploader unknown")
+    publisher["with"]["path"]="dist/"
+    if (producer["on"]!=original_producer_trigger or
+        producer.get("permissions")!=original_producer_permissions or
+        list(producer["jobs"])!=original_producer_jobs):
+        raise ValueError("unintended producer configuration changed")
+    producer_path.write_text(yaml.safe_dump(producer,sort_keys=False),encoding="utf8")
+
+    downloader=next((s for s in steps if re.fullmatch(
+        r"actions/download-artifact@[^\\s]+",str(s.get("uses","")))),None)
+    checker=next((s for s in steps if s.get("id")=="check"),None)
+    if not downloader or not checker:
+        raise ValueError("consumer download/presence-check unknown")
+    downloader["with"]["path"]="$"+"{{ runner.temp }}/incoming/dist"
+    checker["run"]=(
+        'if [ -f "'+"$"+"{{ runner.temp }}"+'/incoming/dist/index.js" ]; then\n'
+        '  echo "present=true" >> "$GITHUB_OUTPUT"\n'
+        'else\n'
+        '  echo "present=false" >> "$GITHUB_OUTPUT"\n'
+        'fi')
     old_if=str(job.get("if",""))
     if "github.event.workflow_run" not in old_if:
         raise ValueError("expected upstream-run guard missing")
@@ -95,6 +132,8 @@ def patch_metadata(workspace):
         "ref_and_push_migrated":True,
         "authorization_context_added":True,
         "branch_and_sha_passed_through_quoted_shell_environment":True,
+        "producer_control_plane_metadata_removed":True,
+        "artifact_layout_and_consumer_presence_check_reconciled":True,
         "caveat":"stronger origin guard may restrict legitimate use; runtime workflows not executed",
     }
 
@@ -110,6 +149,8 @@ def run_one(manifest_name,case_label,patcher,family):
             dest.parent.mkdir(parents=True,exist_ok=True)
             dest.write_bytes(content)
         before=inspect(workspace)
+        all_before={item["path"]:(workspace/item["path"]).read_text("utf8")
+                    for item in selected["files"]}
         target,patched,desc=patcher(workspace)
         original=read_yaml(target)
         old_text=target.read_text("utf8")
@@ -127,6 +168,16 @@ def run_one(manifest_name,case_label,patcher,family):
             fromfile="original/"+target.name,tofile="candidate/"+target.name))
         (OUT/(family+".diff")).write_text(diff,encoding="utf8")
         (OUT/(family+".yaml")).write_text(target.read_text("utf8"),encoding="utf8")
+        for original_path,previous in all_before.items():
+            next_text=(workspace/original_path).read_text("utf8")
+            if previous!=next_text:
+                basename=Path(original_path).name
+                full_diff="".join(difflib.unified_diff(
+                    previous.splitlines(True),next_text.splitlines(True),
+                    fromfile="original/"+basename,tofile="candidate/"+basename))
+                (OUT/(family+"__"+basename+".diff")).write_text(
+                    full_diff,encoding="utf8")
+                (OUT/(family+"__"+basename)).write_text(next_text,encoding="utf8")
     if before["families"].get(family,0)!=1 or after["families"].get(family,0)!=0:
         raise AssertionError("expected exact pre/post ProofCut path")
     return {
