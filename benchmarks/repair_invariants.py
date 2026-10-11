@@ -29,7 +29,7 @@ def action_step(steps,action):
                  re.fullmatch(r"actions/"+action+r"@[^\s]+",str(s.get("uses","")))),None)
 
 
-def check_dist_contract(producer,consumer):
+def check_dist_contract(producer,consumer,require_ref_cas=False):
     """Return detailed Boolean obligations, never just a safe/unsafe verdict."""
     producer_steps=steps_for(producer,"rebuild")
     consumer_steps=steps_for(consumer,"commit")
@@ -100,29 +100,37 @@ def check_dist_contract(producer,consumer):
     obligations["temporal_order_and_dependencies"]=temporal["temporal_order_and_dependencies"]
     obligations["critical_step_failure_propagation"]=temporal["critical_step_failure_propagation"]
     obligations["critical_execution_context"]=temporal["critical_execution_context"]
-    return {"status":"bounded_semantic_and_causal_contract_checks",
+    if require_ref_cas:
+        obligations["remote_ref_expected_oid_cas"]=ref_update["stronger_pattern_passed"]
+    return {"status":"bounded_semantic_causal_ref_contract_checks",
             "passed":all(obligations.values()),
             "passed_count":sum(obligations.values()),
             "total_count":len(obligations),
             "checks":obligations,
             "causal_evidence":temporal["explanation"],
             "ref_update_assurance":ref_update,
+            "requested_ref_cas":bool(require_ref_cas),
+            "claim_scope":("causal_business_contract_and_expected_ref_cas_pattern"
+                           if require_ref_cas
+                           else "causal_business_contract_without_atomic_ref_guarantee"),
             "limitations":"restricted expression parser and bounded negative scenarios; not exhaustive condition semantics or proof of business behavior"}
 
 
-def load_from_workspace(root):
+def load_from_workspace(root,require_ref_cas=False):
     d=Path(root)/".github"/"workflows"
     producer=yaml.load((d/"rebuild-dist.yml").read_text("utf8"),Loader=yaml.BaseLoader)
     consumer=yaml.load((d/"commit-dist.yml").read_text("utf8"),Loader=yaml.BaseLoader)
-    return check_dist_contract(producer,consumer)
+    return check_dist_contract(producer,consumer,require_ref_cas=require_ref_cas)
 
 
 def main():
     import argparse
     p=argparse.ArgumentParser()
     p.add_argument("workspace")
+    p.add_argument("--require-ref-cas",action="store_true",
+                   help="fail closed unless an explicit expected-source-OID reference lease is verified")
     args=p.parse_args()
-    result=load_from_workspace(args.workspace)
+    result=load_from_workspace(args.workspace,require_ref_cas=args.require_ref_cas)
     print(json.dumps(result,indent=2))
     return 0 if result["passed"] else 2
 
