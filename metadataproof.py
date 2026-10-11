@@ -18,17 +18,35 @@ def contents_write(workflow,job):
 
 
 def artifact_metadata_output(step):
-    """Find a very specific untrusted head-ref metadata -> step output bridge."""
-    run=str(step.get("run",""))
+    """Model only an explicit artifact-read variable piped to an output.
+
+    Similar names in comments, echo-only examples, or constant output values
+    are not data dependencies. This is a narrow shell pattern, not Bash AST.
+    """
     if not step.get("id"):
         return None
-    if not re.search(r"dist-meta/head-ref",run):
-        return None
-    if "GITHUB_OUTPUT" not in run or not re.search(r"head-ref\s*=",run):
-        return None
-    if not re.search(r"head_ref\s*=",run):
+    run=str(step.get("run",""))
+    lines=[line.strip() for line in run.splitlines()
+           if line.strip() and not line.lstrip().startswith("#")]
+    has_read=any(re.search(r"\bhead_ref\s*=\s*[\"']?\$\(",line)
+                 and "dist-meta/head-ref" in line for line in lines)
+    has_output=any(re.match(r"echo\s+[\"']?head-ref=\$(?:\{head_ref\}|head_ref)\b",line)
+                   and "GITHUB_OUTPUT" in line and ">>" in line for line in lines)
+    if not (has_read and has_output):
         return None
     return str(step["id"]),"head-ref"
+
+
+def push_uses_output(command,step_id,output_name):
+    """Inspect command-start git push, never printed examples or comments."""
+    marker=(step_id,output_name)
+    for line in str(command).splitlines():
+        code=line.strip()
+        if not re.match(r"git\s+push\b",code):
+            continue
+        if marker in STEP_OUTPUT.findall(code):
+            return True
+    return False
 
 
 def metadata_proofs(root="."):
@@ -78,7 +96,7 @@ def metadata_proofs(root="."):
                     if (step_id,output_name) in STEP_OUTPUT.findall(ref):
                         checkout_steps.append(j)
                 command=str(nxt.get("run",""))
-                if "git push" in command and (step_id,output_name) in STEP_OUTPUT.findall(command):
+                if push_uses_output(command,step_id,output_name):
                     push_steps.append(j)
             if not checkout_steps or not push_steps:
                 gaps.append({"consumer":candidate["consumer"],"job":candidate["job"],
