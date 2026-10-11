@@ -6,6 +6,7 @@ authorization for production deployment, even if branch.protected is false.
 import argparse
 import json
 import os
+import re
 from pathlib import Path
 from urllib.request import Request,urlopen
 from urllib.error import HTTPError,URLError
@@ -17,9 +18,10 @@ SAFE_LAB_PREFIX="research/ref-cas-remote-"
 def assess(repo,branch,branch_record,rulesets,error=None):
     """Fail closed on absent policy, prohibited branch or unknown repository."""
     branches_ok=(
-        bool(repo) and "/" in repo and
-        branch.startswith(SAFE_LAB_PREFIX) and
-        not any(part in ("","..",".") for part in branch.split("/"))
+        repo=="junlin20011207/test" and
+        re.fullmatch(
+            r"research/ref-cas-remote-(?:plain|strict|positive)-20261011",
+            branch) is not None
     )
     is_protected=(branch_record.get("protected")
                   if isinstance(branch_record,dict) else None)
