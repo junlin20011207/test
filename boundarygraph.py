@@ -9,8 +9,13 @@ EXEC=re.compile(r"(?:^|[\s;&|])(?:bash|sh|python\d*|node|source|eval|\.\/|chmod\
 SECRET=re.compile(r"secrets\.(?!GITHUB_TOKEN\b)[A-Z_]\w*",re.I)
 
 def read(root):
-    root=Path(root);files=sorted(root.glob(".github/workflows/*.y*ml")) if root.is_dir() else [root]
+    root=Path(root)
+    if not root.exists():
+        return [],[str(root)+": path does not exist"]
+    files=sorted(root.glob(".github/workflows/*.y*ml")) if root.is_dir() else [root]
+
     if root.is_dir() and not files:files=sorted(root.glob("*.y*ml"))
+    if not files:return [],[str(root)+": no YAML workflows found"]
     w=[];unknown=[]
     for p in files:
         try:
@@ -48,13 +53,13 @@ def transfers(steps):
         params=s.get("with") or {}
         if not isinstance(params,dict):params={}
         command=str(s.get("run",""))
-        if "actions/download-artifact@" in action:
+        if re.fullmatch(r"actions/download-artifact@[^\\s]+",action):
             run_id=str(params.get("run-id",""))
             token=str(params.get("github-token",""))
             # The official action defaults to CURRENT run, not the upstream run.
             if "github.event.workflow_run.id" in run_id and token:ids.append(i)
             elif run_id or token:unknown.append("download run identity unresolved")
-        elif "dawidd6/action-download-artifact@" in action:
+        elif re.fullmatch(r"dawidd6/action-download-artifact@[^\\s]+",action):
             if "github.event.workflow_run.id" in str(params.get("run_id","")):ids.append(i)
             else:unknown.append("third-party artifact origin unresolved")
         elif "gh run download" in command:
