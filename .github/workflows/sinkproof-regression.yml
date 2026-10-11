@@ -29,6 +29,8 @@ jobs:
         run: python benchmarks/repairlab.py
       - name: Verify local inert Git stale-artifact write ordering
         run: python benchmarks/temporal_git_race.py
+      - name: Compare old historical repair against opt-in expected-SHA reference CAS candidate
+        run: python -m benchmarks.ref_cas_candidate
       - name: Verify guard obligations against 13 adversarial counterexamples
         run: python benchmarks/assurance_certificate.py
       - name: Verify inert artifact isolation preserves data while blocking file overwrite
@@ -45,5 +47,6 @@ jobs:
             baseline-results/repairlab/
             baseline-results/assurance/
             baseline-results/temporal-contract/
+            baseline-results/ref-cas-candidate/
           retention-days: 14
           if-no-files-found: warn

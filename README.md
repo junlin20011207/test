@@ -61,6 +61,17 @@
 
 本阶段仅证明**特定跨运行 Artifact 修复模板**的必要因果合同，不是对任意 GitHub Actions 流程的完整形式化证明，也未发明 CodeQL 已有的漏洞检测能力。
 
+## 第八阶段：在真实 Git 行为下验证修复的远端版本一致性（2026-10-11）
+
+[**第八阶段中文研究报告**](docs/proofcut-phase8-ref-cas.md) ｜ [**研究草稿 PR #10**](https://github.com/junlin20011207/test/pull/10)
+
+- [**真实 GitHub-hosted Runner 上的 8 项本地 Git 实验**](https://github.com/junlin20011207/test/actions/runs/38148670585)：常规 Push 只在“另一写入者将远端分支回退到已知祖先”这个有条件的场景中，额外允许旧构建重新推进引用；显式旧 SHA 的 Lease Push 则拒绝这一变化。其余远端前移/分叉场景两者均拒绝。
+- [**固定历史漏洞修复 16 项/17 项双层级验证**](https://github.com/junlin20011207/test/actions/runs/38149518867)：前 16 项属于因果和业务契约；默认普通 Push 的远端原子性明确为 `UNVERIFIED`，而实验性候选要求来源 SHA、祖先检查和显式引用 CAS，严格模式 17/17 通过。
+- [**320 项 Pytest 完整通过**](https://github.com/junlin20011207/test/actions/runs/38149518900)，其中额外 4 项 Shell 反证先真实失败，再修复为拒绝死分支、文本中的假命令和错误退出被取消的情形。
+- [**官方 CodeQL 2.27.2 对增强候选的独立扫描**](https://github.com/junlin20011207/test/actions/runs/38149518916)：受 SHA-256 校验的发布包、真正的 Actions 源码数据库与 SARIF，`security-extended` 告警 **0**。
+
+**严禁直接将增强候选自动部署**：显式 `--force-with-lease` 的强制写入语义可能受到 GitHub 分支保护限制，实验只在一次性本地 bare Git 仓库中验证，尚未证明第三方业务兼容性、泛化准确率或竞赛获奖级别的技术首创。
+
 ## 快速复现
 
 ```bash

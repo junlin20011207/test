@@ -6,6 +6,7 @@ NOT a complete GitHub expression-language verification or safety proof.
 """
 import re
 from benchmarks.guard_semantics import guard_samples, require_on_every_branch
+from benchmarks.ref_update_contract import inspect_push_step
 
 TMP=chr(36)+"{{ runner.temp }}/incoming/dist"
 TRUSTED_BRANCH=chr(36)+"{{ github.event.workflow_run.head_branch }}"
@@ -47,15 +48,17 @@ def sha_is_actually_compared(step):
     return test_equal or if_guard
 
 
-def push_failure_is_not_swallowed(step):
+def push_failure_is_not_swallowed(step,job=None):
     code="\n".join(line.strip() for line in str(step.get("run","")).splitlines()
                    if line.strip() and not line.lstrip().startswith("#"))
     expected='git push origin "HEAD:refs/heads/$HEAD_BRANCH"'
-    return bool(re.search(r'(?m)^'+re.escape(expected)+r'\s*$',code)) and (
+    legacy=bool(re.search(r'(?m)^'+re.escape(expected)+r'\s*$',code))
+    if "--force-with-lease" in code:
+        return inspect_push_step(step,job)["stronger_pattern_passed"]
+    return legacy and (
         "|| true" not in code and
         step.get("continue-on-error") not in (True,"true") and
         str(step.get("if","")).strip() not in ("false",chr(36)+"{{ false }}"))
-
 
 def producer_actor_is_guarded(expr):
     ok={"github.actor":"dependabot[bot]"}
@@ -114,7 +117,7 @@ def harden(existing,producer,consumer,producer_steps,consumer_steps):
     verification=next((s for s in consumer_steps if isinstance(s,dict) and
                        "git rev-parse HEAD" in str(s.get("run",""))),{})
     pusher=next((s for s in consumer_steps if isinstance(s,dict) and
-                 re.search(r"(?m)^\s*git\s+push\s+origin",str(s.get("run","")))),{})
+                 re.search(r"(?m)^\s*git\s+push\s+(?:--force-with-lease=\S+\s+)?origin\b",str(s.get("run","")))),{})
     checks["publisher_named_and_dist_only"]=(
         checks["publisher_named_and_dist_only"] and
         unique_action(producer_steps,"upload-artifact"))
@@ -135,7 +138,7 @@ def harden(existing,producer,consumer,producer_steps,consumer_steps):
         sha_is_actually_compared(verification))
     checks["write_target_environment_bound"]=(
         checks["write_target_environment_bound"] and
-        push_failure_is_not_swallowed(pusher))
+        push_failure_is_not_swallowed(pusher,consumer_job))
     checks["checkout_target_from_event"]=(
         checks["checkout_target_from_event"] and
         unique_action(consumer_steps,"checkout"))

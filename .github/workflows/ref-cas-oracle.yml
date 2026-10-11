@@ -1,0 +1,24 @@
+name: ProofCut Real Git Reference CAS Oracle
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  local-ref-cas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Run eight real local bare Git ref histories
+        run: python benchmarks/ref_cas_oracle.py
+      - name: Preserve observed ref state and experiment assertions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-ref-cas-evidence
+          path: baseline-results/ref-cas/comparison.json
+          retention-days: 10
+          if-no-files-found: warn

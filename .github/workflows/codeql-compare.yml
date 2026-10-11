@@ -42,6 +42,8 @@ jobs:
         run: python benchmarks/codeql_comparison.py
       - name: Compare repaired pipeline against six independent business-contract mutations
         run: python -m benchmarks.contract_codeql_comparison
+      - name: Independent CodeQL scan of opt-in expected-SHA lease repair
+        run: python -m benchmarks.ref_cas_candidate --codeql
       - name: Upload source-verifiable result and SARIF
         if: always()
         uses: actions/upload-artifact@v4
@@ -50,5 +52,6 @@ jobs:
           path: |
             baseline-results/codeql/
             baseline-results/contract-comparison/
+            baseline-results/ref-cas-candidate/
           retention-days: 14
           if-no-files-found: warn
