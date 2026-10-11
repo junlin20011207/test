@@ -16,6 +16,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: python -m benchmarks.policy_preflight
+      - name: Inspect public protected-branch states read-only
+        run: python -m benchmarks.policy_readonly_matrix
       - name: Archive real read-only policy response, never authorize deployment
         if: always()
         uses: actions/upload-artifact@v4
