@@ -1,0 +1,18 @@
+name: BoundaryGraph Provenance Producer
+on:
+  push:
+    branches: [main, boundarygraph-v1]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write harmless marker
+        run: printf 'boundarygraph-probe-v1\n' > probe.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boundarygraph-probe
+          path: probe.txt

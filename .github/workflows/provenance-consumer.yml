@@ -1,0 +1,21 @@
+name: BoundaryGraph Provenance Consumer
+on:
+  workflow_run:
+    workflows: [BoundaryGraph Provenance Producer]
+    types: [completed]
+permissions:
+  actions: read
+  contents: read
+jobs:
+  verify:
+    if: github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: boundarygraph-probe
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Verify fixed content, never execute it
+        run: test "$(cat probe.txt)" = 'boundarygraph-probe-v1'
