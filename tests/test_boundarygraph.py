@@ -124,3 +124,41 @@ def test_second_shell_command_under_download_path(tmp_path):
         "      - run: echo inspect && bash ./incoming/entry.sh\n")
     result=analyze(tmp_path)
     assert result["findings"][0]["severity"]=="critical"
+
+def test_download_step_push_guard_cuts_transfer(tmp_path):
+    folder=tmp_path/".github"/"workflows"
+    folder.mkdir(parents=True)
+    (folder/"a.yml").write_text(
+        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
+    (folder/"b.yml").write_text(
+        "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
+        "permissions: {contents: write}\njobs:\n  deploy:\n"
+        "    runs-on: ubuntu-latest\n    steps:\n"
+        "      - uses: actions/download-artifact@v4\n"
+        "        if: github.event.workflow_run.event == 'push'\n"
+        "        with:\n          github-token: token\n"
+        "          run-id: ${{ github.event.workflow_run.id }}\n"
+        "          path: ./incoming\n"
+        "      - run: bash ./incoming/entry.sh\n")
+    result=analyze(tmp_path)
+    assert not result["findings"]
+    assert any(g.get("reason")=="artifact transfer gated to trusted push origin" for g in result["guarded"])
+
+
+def test_download_step_ambiguous_guard_does_not_cut(tmp_path):
+    folder=tmp_path/".github"/"workflows"
+    folder.mkdir(parents=True)
+    (folder/"a.yml").write_text(
+        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
+    (folder/"b.yml").write_text(
+        "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
+        "permissions: {contents: write}\njobs:\n  deploy:\n"
+        "    runs-on: ubuntu-latest\n    steps:\n"
+        "      - uses: actions/download-artifact@v4\n"
+        "        if: github.event.workflow_run.event == 'push' || true\n"
+        "        with:\n          github-token: token\n"
+        "          run-id: ${{ github.event.workflow_run.id }}\n"
+        "          path: ./incoming\n"
+        "      - run: bash ./incoming/entry.sh\n")
+    result=analyze(tmp_path)
+    assert result["findings"][0]["severity"]=="critical"
