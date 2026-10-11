@@ -43,6 +43,19 @@ def change(name,root):
     elif name=="push_failure_ignored":
         step=next(x for x in consumer_steps if "git push origin" in str(x.get("run","")))
         step["run"]+=" || true"
+    elif name=="push_before_sha_verify":
+        index=next(i for i,s in enumerate(consumer_steps) if "git push origin" in str(s.get("run","")))
+        earlier=next(i for i,s in enumerate(consumer_steps) if "git rev-parse HEAD" in str(s.get("run","")))
+        consumer_steps.insert(earlier,consumer_steps.pop(index))
+    elif name=="apply_before_sha_verify":
+        first=next(i for i,s in enumerate(consumer_steps) if "git rev-parse HEAD" in str(s.get("run","")))
+        second=next(i for i,s in enumerate(consumer_steps) if "mv " in str(s.get("run","")) and " dist" in str(s.get("run","")))
+        consumer_steps[first],consumer_steps[second]=consumer_steps[second],consumer_steps[first]
+    elif name=="job_ignores_failures":
+        cons["jobs"]["commit"]["continue-on-error"]=True
+    elif name=="apply_wrong_workdir":
+        step=next(s for s in consumer_steps if "mv " in str(s.get("run","")) and " dist" in str(s.get("run","")))
+        step["working-directory"]="different-directory"
     else:
         raise ValueError(name)
     p.write_text(yaml.safe_dump(prod,sort_keys=False),encoding="utf8")
@@ -57,7 +70,9 @@ def run():
     pinned=next(x for x in m["cases"] if x["label"]=="vulnerable")
     variants=["control","producer_renamed","download_moved",
               "readiness_always_true","sha_only_logged",
-              "actor_guard_bypass","push_failure_ignored"]
+              "actor_guard_bypass","push_failure_ignored",
+              "push_before_sha_verify","apply_before_sha_verify",
+              "job_ignores_failures","apply_wrong_workdir"]
     output=[]
     for name in variants:
         with tempfile.TemporaryDirectory(prefix="contract-compare-") as tmp:
