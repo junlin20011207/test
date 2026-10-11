@@ -71,16 +71,16 @@ def test_explicit_download_directory_script_execution(tmp_path):
     folder=tmp_path/".github"/"workflows"
     folder.mkdir(parents=True)
     (folder/"producer.yml").write_text(
-        "name: Producer\\non: [pull_request]\\njobs: {build: {runs-on: ubuntu-latest}}\\n")
+        "name: Producer\non: [pull_request]\njobs: {build: {runs-on: ubuntu-latest}}\n")
     (folder/"consumer.yml").write_text(
-        "name: Consumer\\non:\\n  workflow_run:\\n    workflows: [Producer]\\n"
-        "permissions: {contents: write}\\njobs:\\n  deploy:\\n"
-        "    runs-on: ubuntu-latest\\n    steps:\\n"
-        "      - uses: actions/download-artifact@v4\\n"
-        "        with:\\n          github-token: token\\n"
-        "          run-id: ${{ github.event.workflow_run.id }}\\n"
-        "          path: ./incoming\\n"
-        "      - run: bash ./incoming/entry.sh\\n")
+        "name: Consumer\non:\n  workflow_run:\n    workflows: [Producer]\n"
+        "permissions: {contents: write}\njobs:\n  deploy:\n"
+        "    runs-on: ubuntu-latest\n    steps:\n"
+        "      - uses: actions/download-artifact@v4\n"
+        "        with:\n          github-token: token\n"
+        "          run-id: ${{ github.event.workflow_run.id }}\n"
+        "          path: ./incoming\n"
+        "      - run: bash ./incoming/entry.sh\n")
     result=analyze(tmp_path)
     assert len(result["findings"])==1
     assert result["findings"][0]["severity"]=="critical"
