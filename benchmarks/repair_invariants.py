@@ -8,6 +8,7 @@ from pathlib import Path
 import json
 import re
 import yaml
+from benchmarks.contract_semantics import harden
 
 RUN="$"+"{{ github.event.workflow_run.id }}"
 TOKEN="$"+"{{ github.token }}"
@@ -90,12 +91,13 @@ def check_dist_contract(producer,consumer):
                     "dependabot[bot]" in str(consumer_if) and
                     "startsWith(github.event.workflow_run.head_branch" in str(consumer_if)),
     }
-    return {"status":"contract_checks_only",
+    obligations=harden(obligations,producer,consumer,producer_steps,consumer_steps)
+    return {"status":"bounded_semantic_contract_checks",
             "passed":all(obligations.values()),
             "passed_count":sum(obligations.values()),
             "total_count":len(obligations),
             "checks":obligations,
-            "limitations":"necessary source-level invariants; not proof that jobs run or business behavior survives"}
+            "limitations":"restricted expression parser and bounded negative scenarios; not exhaustive condition semantics or proof of business behavior"}
 
 
 def load_from_workspace(root):
