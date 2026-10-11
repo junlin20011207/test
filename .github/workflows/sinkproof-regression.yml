@@ -1,0 +1,38 @@
+name: SinkProof Historic Fix Regression
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  historical-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install static-analysis dependencies
+        run: python -m pip install -r requirements.txt
+      - name: New source-to-sink metamorphic tests
+        run: python -m pytest -q tests/test_sinkproof.py tests/test_metadataproof.py
+      - name: Reproduce public vulnerable/fixed pair without running artifacts
+        run: python benchmarks/replay_advisory.py
+      - name: Verify published artifact metadata authorization regression
+        run: python benchmarks/replay_metadata.py
+      - name: Counterfactual one-field repair-cut controls
+        run: python benchmarks/counterfactuals.py
+      - name: Preserve immutable-revision comparison
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sinkproof-historical-security-fix-pair
+          path: |
+            baseline-results/advisory/
+            baseline-results/metadata/
+            baseline-results/counterfactuals/
+          retention-days: 14
+          if-no-files-found: warn
