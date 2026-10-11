@@ -7,7 +7,7 @@ import argparse
 import json
 import posixpath
 import re
-from boundarygraph import analyze, read
+from boundarygraph import analyze, read, shell_commands
 
 JS_IMPORT=re.compile(r"""(?:require\s*\(\s*|from\s+|import\s*\(\s*)["'](\./[^"']+)["']""")
 SHELL_EXEC=re.compile(r"""(?:^|[;&|\n]\s*)(?:bash|sh|python(?:3(?:\.\d+)?)?|node|source)\s+(\./[\w./-]+)""")
@@ -44,15 +44,96 @@ def trusted_checkout(step):
         phrase in ref for phrase in ("pull_request.head","workflow_run.head_sha","github.head_ref"))
 
 
+def checkout_covers(step, executable):
+    """Three-valued coverage of an executable by a checkout."""
+    if not trusted_checkout(step):
+        return "unknown"
+    params=step.get("with") or {}
+    raw_path=str(params.get("path","")).strip()
+    if chr(36)+"{{" in raw_path:
+        return "unknown"
+    if posixpath.normpath(raw_path or ".")!=".":
+        return "excluded"
+    sparse=str(params.get("sparse-checkout","")).strip()
+    if not sparse:
+        return "covered"
+    if chr(36)+"{{" in sparse:
+        return "unknown"
+    targets=[posixpath.normpath(line.strip().removeprefix("./"))
+             for line in sparse.splitlines()
+             if line.strip() and not line.lstrip().startswith("#")]
+    target=executable.removeprefix("./")
+    return "covered" if any(t=="." or target==t or target.startswith(t+"/")
+                            for t in targets) else "excluded"
+
+
+def js_code_positions(script):
+    """Lex strings and comments; this is not a JavaScript parser."""
+    clean=list(script)
+    active=set()
+    mode="code"
+    i=0
+    while i<len(script):
+        ch=script[i]
+        nxt=script[i+1] if i+1<len(script) else ""
+        if mode=="code":
+            if ch=="/" and nxt in ("/","*"):
+                mode="line" if nxt=="/" else "block"
+                clean[i]=clean[i+1]=" "
+                i+=2
+                continue
+            if ch in ("'",'"',chr(96)):
+                mode=ch
+            else:
+                active.add(i)
+            i+=1
+            continue
+        if mode in ("'",'"',chr(96)):
+            if ch==chr(92):
+                i+=2
+                continue
+            if ch==mode:
+                mode="code"
+            i+=1
+            continue
+        if mode=="line":
+            if ch=="\n":
+                mode="code"
+            else:
+                clean[i]=" "
+            i+=1
+            continue
+        if mode=="block":
+            if ch=="*" and nxt=="/":
+                clean[i]=clean[i+1]=" "
+                i+=2
+                mode="code"
+            else:
+                if ch!="\n":clean[i]=" "
+                i+=1
+    return "".join(clean),active
+
+
 def referenced_executables(step):
-    files=[]
+    targets=[]
     action=str(step.get("uses","")).lower()
     params=step.get("with") or {}
     if re.fullmatch(r"actions/github-script@[^\s]+",action) and isinstance(params,dict):
-        files.extend(JS_IMPORT.findall(str(params.get("script",""))))
-    files.extend(SHELL_EXEC.findall(str(step.get("run",""))))
-    return sorted(set(posixpath.normpath(f) for f in files if f.startswith("./")))
-
+        clean,code=js_code_positions(str(params.get("script","")))
+        targets.extend(m.group(1) for m in JS_IMPORT.finditer(clean)
+                       if m.start() in code)
+    commands=shell_commands(str(step.get("run","")))
+    if commands:
+        for cmd in commands:
+            if not cmd:
+                continue
+            if cmd[0] in ("bash","sh","source",".","node","python","python3"):
+                args=[a for a in cmd[1:] if not a.startswith("-")]
+                if args and args[0].startswith("./"):
+                    targets.append(args[0])
+            elif cmd[0].startswith("./"):
+                targets.append(cmd[0])
+    return sorted(set(posixpath.normpath(f) for f in targets if f.startswith("./")))
 
 def sink_proofs(root="."):
     workflows,read_errors=read(root)
@@ -97,19 +178,25 @@ def sink_proofs(root="."):
                 "false",chr(36)+"{{ false }}"):
                 continue
             for target in referenced_executables(step):
+                coverage=[k for k in checkouts
+                          if checkout_covers(steps[k],target)=="covered"]
+                if not coverage:
+                    gaps.append({"consumer":entry["consumer"],"job":entry["job"],
+                                 "reason":"no checkout proven to contain loaded path "+target})
+                    continue
                 proofs.append({
                     "rule":"BG-OVERLAY-001",
                     "status":"potential_overwrite_then_load",
                     "impact":"potential privileged execution, not verified",
                     "producer":entry["producer"],"consumer":entry["consumer"],
                     "job":entry["job"],"artifact_name":entry.get("artifact_name",""),
-                    "checkout_step":checkouts[-1],"download_step":i,"load_step":j,
+                    "checkout_step":coverage[-1],"download_step":i,"load_step":j,
                     "loaded_path":target,
                     "publisher_status":entry["publisher_status"],
                     "witness":[
                         "untrusted upstream event and matching producer publication",
                         "privileged downstream selects triggering upstream run",
-                        "checkout at step "+str(checkouts[-1])+" precedes artifact download",
+                        "covered checkout at step "+str(coverage[-1])+" precedes artifact download",
                         "download at step "+str(i)+" extracts at workspace root",
                         "relative executable "+target+" imported/executed at step "+str(j),
                     ],

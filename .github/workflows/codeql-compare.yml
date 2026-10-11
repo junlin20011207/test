@@ -1,0 +1,50 @@
+name: ProofCut CodeQL 2.27.2 Equal-Sample and Draft-Patch Benchmark
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  codeql-equal-sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 24
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install parser
+        run: python -m pip install -r requirements.txt
+      - name: Install pinned official Actions CodeQL bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v zstd >/dev/null 2>&1; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq zstd
+          fi
+          URL=https://github.com/github/codeql-action/releases/download/codeql-bundle-v2.27.2/codeql-bundle-actions-linux64.tar.zst
+          curl --fail --location --retry 3 --retry-all-errors --silent --show-error "$URL" -o "$RUNNER_TEMP/codeql-actions.tar.zst"
+          echo "1878d7afa4a32d1109734e2ea6311bddc5f6da7be62fd6c9bf814e86d5da41ef  $RUNNER_TEMP/codeql-actions.tar.zst" | sha256sum -c -
+          mkdir -p "$RUNNER_TEMP/codeql-actions"
+          tar --zstd -xf "$RUNNER_TEMP/codeql-actions.tar.zst" -C "$RUNNER_TEMP/codeql-actions"
+          CODEQL_BIN=$(find "$RUNNER_TEMP/codeql-actions" -path '*/codeql/codeql' -type f -print -quit)
+          if [ -z "$CODEQL_BIN" ]; then
+            echo "Pinned official CodeQL CLI not found in bundle" >&2
+            find "$RUNNER_TEMP/codeql-actions" -maxdepth 3 -type f -name codeql -print
+            exit 2
+          fi
+          echo "CODEQL_BIN=$CODEQL_BIN" >> "$GITHUB_ENV"
+          "$CODEQL_BIN" version
+      - name: Pinned historical and two draft-patch scans
+        run: python benchmarks/codeql_comparison.py
+      - name: Upload source-verifiable result and SARIF
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proofcut-codeql-pinned-six-state-comparison
+          path: baseline-results/codeql/
+          retention-days: 14
+          if-no-files-found: warn
