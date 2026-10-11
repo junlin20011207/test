@@ -15,6 +15,13 @@ python boundarygraph.py . --json
 
 **安全性边界：** 只执行静态分析；未覆盖的 GitHub 条件表达式、其他工件来源、复用工作流、权限环境保护等可能导致遗漏。告警是风险路径，不是已证明的漏洞。输出没有告警并不代表证明安全。
 
+
+## 近期可复核结果（2026-10-11）
+
+- [GitHub CI：59 项自动化测试通过](https://github.com/junlin20011207/test/actions/runs/38133987471)。包含 Shell 命令误报、步骤级可信条件、缺失扫描目标及 Action 名称伪装测试；属于测试样本内验证。
+- [三工具独立对照 CI](https://github.com/junlin20011207/test/actions/runs/38133888059) 已运行 BoundaryGraph、zizmor 1.30.1 和 Poutine。四组自建合成工作流的原始告警类型不同，**不能依据告警数量断言优劣**。
+- [对照实验的详细记录与局限](docs/differential-study.md)。当前还没有真实仓库人工标注数据集、同一评测语义下的可靠精确率/召回率。
+
 ## 研究阶段及评分
 
 本项目明确对照成熟的 zizmor、Poutine 和 GitHub 原生 Artifact Attestation 能力。初步实现没有证实比强基线有独占优势。**不能把 22/22 本地单元测试和 96/96 合成测试解释为真实场景的 100% 检出率，或等同正式评委打分。**
