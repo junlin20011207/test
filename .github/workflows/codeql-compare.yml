@@ -1,4 +1,4 @@
-name: ProofCut CodeQL 2.27.2 Equal-Sample Benchmark
+name: ProofCut CodeQL 2.27.2 Equal-Sample and Draft-Patch Benchmark
 on:
   pull_request:
   workflow_dispatch:
@@ -38,13 +38,13 @@ jobs:
           fi
           echo "CODEQL_BIN=$CODEQL_BIN" >> "$GITHUB_ENV"
           "$CODEQL_BIN" version
-      - name: Equal-sample historical scans
+      - name: Pinned historical and two draft-patch scans
         run: python benchmarks/codeql_comparison.py
       - name: Upload source-verifiable result and SARIF
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: proofcut-codeql-pinned-four-state-comparison
+          name: proofcut-codeql-pinned-six-state-comparison
           path: baseline-results/codeql/
           retention-days: 14
           if-no-files-found: warn
