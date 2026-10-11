@@ -78,7 +78,8 @@
           "sha": "9ede40fd9a94ef629aa3bc5774da805053adfccc",
           "size": 1306
         }
-      ]
+      ],
+      "stratum": "preselected-general"
     },
     {
       "name": "pypa/pip",
@@ -114,7 +115,8 @@
           "sha": "9d19aad356e91a64ece97ae2de52ccd28e09d5df",
           "size": 885
         }
-      ]
+      ],
+      "stratum": "preselected-general"
     },
     {
       "name": "pytest-dev/pytest",
@@ -150,7 +152,8 @@
           "sha": "9255c5a52c48ed8646c5733bb46138d56ef8cb1b",
           "size": 2934
         }
-      ]
+      ],
+      "stratum": "preselected-general"
     },
     {
       "name": "actions/runner",
@@ -221,7 +224,8 @@
           "sha": "49a2aa38c779b81831665259b472ddf6526cd8fa",
           "size": 588
         }
-      ]
+      ],
+      "stratum": "preselected-general"
     },
     {
       "name": "astral-sh/ruff",
@@ -342,7 +346,267 @@
           "sha": "d9e92d3fcca2ac483a75e6238dc21f10a7875fd2",
           "size": 4347
         }
+      ],
+      "stratum": "preselected-general"
+    },
+    {
+      "name": "cloudflare/kumo",
+      "commit": "543dc8a0ca1b6f7678eb9c27be6750965eaf2564",
+      "stratum": "targeted-workflow-run",
+      "files": [
+        {
+          "path": ".github/workflows/bonk-pr-review.yml",
+          "sha": "690d3d86deeed66ab507d244e0be148f00f0c510",
+          "size": 2819
+        },
+        {
+          "path": ".github/workflows/bonk.yml",
+          "sha": "502be14f65c60d6bab1dff13cc9090ece6ac210d",
+          "size": 3284
+        },
+        {
+          "path": ".github/workflows/docs-pr.yml",
+          "sha": "b5b8ca84f982dccd75c0bafe9c6d485068f9d3c7",
+          "size": 949
+        },
+        {
+          "path": ".github/workflows/docs-preview-post-build.yml",
+          "sha": "4d51f395de58e073de63bd6c47fdb80010b4025f",
+          "size": 6868
+        },
+        {
+          "path": ".github/workflows/package-preview-pr.yml",
+          "sha": "a45600b0e77a4702f84046bb504b513e6ae701aa",
+          "size": 1015
+        },
+        {
+          "path": ".github/workflows/pullrequest-report.yml",
+          "sha": "6d5703a71538abe7f9626abc952d2691353a8cf6",
+          "size": 4326
+        },
+        {
+          "path": ".github/workflows/pullrequest.yml",
+          "sha": "d37047011c0026126471c969e4f38f5ef88d0468",
+          "size": 6481
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "sha": "3238b386d81dc9c9057289d7e1d0b8d0f8c17f91",
+          "size": 1854
+        },
+        {
+          "path": ".github/workflows/semgrep.yml",
+          "sha": "e3a42c79728190e5029695fa6448c9a237465fa8",
+          "size": 828
+        },
+        {
+          "path": ".github/workflows/validate-changeset.yml",
+          "sha": "355caecb12cb21f0f127c1fc9fb3090462ae5743",
+          "size": 826
+        },
+        {
+          "path": ".github/workflows/validate-pr-description.yml",
+          "sha": "c1cac2703e2199688890ddf88e3164ba32b880bc",
+          "size": 2137
+        },
+        {
+          "path": ".github/workflows/visual-regression.yml",
+          "sha": "8a40f5dc7977c1badc20ad379bb568dd80585b0e",
+          "size": 2108
+        },
+        {
+          "path": ".github/workflows/warm-task-cache.yml",
+          "sha": "9e486b7815731d7f1668637cd863c3c6b7b856bb",
+          "size": 573
+        }
+      ]
+    },
+    {
+      "name": "nf-core/actions",
+      "commit": "7fb34a05569ea1555e81c47c300a817c98501695",
+      "stratum": "targeted-workflow-run",
+      "files": [
+        {
+          "path": ".github/workflows/ci.yml",
+          "sha": "4ac7993be5134b9b6e1d6686611e19ff5411a100",
+          "size": 1457
+        },
+        {
+          "path": ".github/workflows/codeql-analysis.yml",
+          "sha": "320818b14d7cbf0f6d2a0acfc5b4e5ffab6f4ef3",
+          "size": 954
+        },
+        {
+          "path": ".github/workflows/fix-linting.yml",
+          "sha": "d0504580b4e46a5803eb292f445594d5f5bee971",
+          "size": 14476
+        },
+        {
+          "path": ".github/workflows/lint-workflows.yml",
+          "sha": "11a2982d8f0c582a73efe49d579d573e40603026",
+          "size": 3016
+        },
+        {
+          "path": ".github/workflows/release.yml",
+          "sha": "58ab014111c90c5326337930c082005785cc55ce",
+          "size": 5357
+        }
+      ]
+    },
+    {
+      "name": "microsoft/fluentui",
+      "commit": "6e52576d457f0ca13225ea2712e0db7bd1c27e28",
+      "stratum": "targeted-workflow-run",
+      "files": [
+        {
+          "path": ".github/workflows/azure-static-web-apps-deploy.yml",
+          "sha": "0be2edb845fc56c4cfce49a2ad235e9d0d580ba7",
+          "size": 1058
+        },
+        {
+          "path": ".github/workflows/bundle-size-base.yml",
+          "sha": "30c071599e65a58f8acb1fb5751825a2ec5f3895",
+          "size": 2249
+        },
+        {
+          "path": ".github/workflows/bundle-size-comment.yml",
+          "sha": "f872519e2d38e6d02ea7ac66ba0c435be28b50fc",
+          "size": 1488
+        },
+        {
+          "path": ".github/workflows/bundle-size.yml",
+          "sha": "bbf3883ce6cc3cc1bf8395b2f7378e5d5bd11daf",
+          "size": 3192
+        },
+        {
+          "path": ".github/workflows/check-packages.yml",
+          "sha": "be040be283583af39657bb53be8918f17587530f",
+          "size": 2995
+        },
+        {
+          "path": ".github/workflows/check-tooling.yml",
+          "sha": "676dcaab11d15cb2dd9c9b8a4293619c233715a5",
+          "size": 2418
+        },
+        {
+          "path": ".github/workflows/copilot-setup-steps.yml",
+          "sha": "b5e086f39936e5adb181ee838f7b6ada489a727b",
+          "size": 1473
+        },
+        {
+          "path": ".github/workflows/create-experimental-branch.yml",
+          "sha": "e7233da17a76edf4e743fe66a42ac00850d78cd0",
+          "size": 2248
+        },
+        {
+          "path": ".github/workflows/docsite-publish-ghpages.yml",
+          "sha": "785489b3f5f5af7cb42d70e6b6d103512405d2dd",
+          "size": 2732
+        },
+        {
+          "path": ".github/workflows/issues.yml",
+          "sha": "f01cd9f4af67afdfeca218a880b286ac8d398640",
+          "size": 532
+        },
+        {
+          "path": ".github/workflows/pr-housekeeping.yml",
+          "sha": "28e0bdaab31e216d03ebf6b1b45051b2893d8676",
+          "size": 463
+        },
+        {
+          "path": ".github/workflows/pr-vrt-comment.yml",
+          "sha": "45530032965321fbe7e0083463814c7bb5b96207",
+          "size": 5259
+        },
+        {
+          "path": ".github/workflows/pr-vrt.yml",
+          "sha": "48ccb8cb21180b963fd4ec5abdc68582658ec952",
+          "size": 2600
+        },
+        {
+          "path": ".github/workflows/pr-website-deploy-comment.yml",
+          "sha": "19284ffe3e214ee93f7f30c7103e4a2a9da5e223",
+          "size": 4106
+        },
+        {
+          "path": ".github/workflows/pr-website-deploy.yml",
+          "sha": "35887916ffb4ed7e4295243d5eae4e8072546036",
+          "size": 2313
+        },
+        {
+          "path": ".github/workflows/pr.yml",
+          "sha": "560c13b528ade2ba068b07dec9bf37b23e661255",
+          "size": 7374
+        },
+        {
+          "path": ".github/workflows/vrt-baseline.yml",
+          "sha": "232f29aef7d4fabe394c15127eec3eca827e8c0f",
+          "size": 2608
+        }
+      ]
+    },
+    {
+      "name": "spiffe/spire",
+      "commit": "6d10e93a4eef9b270cba5dc6082f1c3c5bd99879",
+      "stratum": "targeted-workflow-run",
+      "files": [
+        {
+          "path": ".github/workflows/assign_reviewer_review_apply.yaml",
+          "sha": "b2792a4b9c01d7e598bb38d82e29fb241744c0fc",
+          "size": 9569
+        },
+        {
+          "path": ".github/workflows/assign_reviewer_review_capture.yaml",
+          "sha": "9c1b5331f4842c24a923425522c2138c2fe882fb",
+          "size": 1932
+        },
+        {
+          "path": ".github/workflows/assign_reviewer.yaml",
+          "sha": "1d2d23ad1ddbbac5760da6c76a3b9853bf2bedc5",
+          "size": 10693
+        },
+        {
+          "path": ".github/workflows/dco.yaml",
+          "sha": "7fd3aa9442f87ce97e2cf13f594f6ca830b3547e",
+          "size": 1018
+        },
+        {
+          "path": ".github/workflows/dependabot_milestone.yml",
+          "sha": "12bc8cc2f54a5af7a0a81d31c993ee53aedd78c1",
+          "size": 3738
+        },
+        {
+          "path": ".github/workflows/depsreview.yaml",
+          "sha": "15f0f9180e77585fcb37b522491ccf603f20a415",
+          "size": 416
+        },
+        {
+          "path": ".github/workflows/milestone_check.yaml",
+          "sha": "c6be17fbf40193223d384f0f18648f03da0eff23",
+          "size": 1749
+        },
+        {
+          "path": ".github/workflows/nightly_build.yaml",
+          "sha": "b7fc7d468f55e984b5dd9136244267fcdade2f6e",
+          "size": 2954
+        },
+        {
+          "path": ".github/workflows/pr_build.yaml",
+          "sha": "d8561737dd887778bcba537ec102ef6ce89f1b81",
+          "size": 20686
+        },
+        {
+          "path": ".github/workflows/release_build.yaml",
+          "sha": "f1906eea1c4fff978d23421340db1be44eb09ff7",
+          "size": 21878
+        },
+        {
+          "path": ".github/workflows/stalebot.yaml",
+          "sha": "f65da04fd4c7f41c173de521d8fb4cac57d87581",
+          "size": 1534
+        }
       ]
     }
-  ]
+  ],
+  "design_note": "The five original repositories were chosen before reading outcomes. The four additional repositories were purposively chosen because public workflows mention workflow_run; report strata separately. No security ground truth or exploit confirmation."
 }
