@@ -1,0 +1,31 @@
+name: ProofCut GitHub Expression Differential Oracle
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  expression-oracle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Compare actual expression engine and local restricted model
+        env:
+          GH_EQ: ${{ 'MAIN' == 'main' }}
+          GH_NE: ${{ 'MAIN' != 'main' }}
+          GH_START: ${{ startsWith('Dependabot/npm', 'dependabot/') }}
+          GH_QUOTED: ${{ 'It''s safe' == 'it''s SAFE' }}
+          GH_FALSE: ${{ startsWith('Release', 'dependabot/') }}
+          GH_COMBINED: ${{ 'main' == 'MAIN' && !startsWith('RELEASE','dependabot/') }}
+        run: python -m benchmarks.github_expression_oracle
+      - name: Save official evaluator comparisons
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: expression-oracle-results
+          path: baseline-results/expression-oracle/results.json
+          if-no-files-found: warn
+          retention-days: 5
