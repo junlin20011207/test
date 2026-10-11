@@ -45,27 +45,87 @@ def privilege(w,j):
         return bool(scopes),"write scopes="+",".join(scopes)
     return p not in ("read-all","none"),"permissions="+str(p)
 
+UPSTREAM_RUN_ID=re.compile(r"\s*\$\{\{\s*github\.event\.workflow_run\.id\s*\}\}\s*\Z")
+
+
+def shell_commands(command):
+    """Split a small, auditable subset of visible shell syntax.
+
+    Lexing is only used to recognize explicit top-level commands; it is not a
+    security proof of full Bash semantics. Unparseable input stays unknown.
+    """
+    try:
+        lex=shlex.shlex(str(command),posix=True,punctuation_chars=";&|()")
+        lex.whitespace=" \t\r"
+        lex.whitespace_split=False
+        lex.commenters="#"
+        tokens=list(lex)
+    except ValueError:
+        return None
+    separators={"\n",";","&&","||","|","&","(",")"}
+    commands=[]
+    current=[]
+    for token in [*tokens,"\n"]:
+        if token in separators:
+            if current:commands.append(current)
+            current=[]
+        else:
+            current.append(token)
+    return commands
+
+
+def gh_download_source(tokens):
+    """Recognize only gh run download with an explicit upstream run argument.
+
+    Unmodeled flags/variables are unknown, never evidence of exact provenance.
+    """
+    if tokens[:3] != ["gh","run","download"]:
+        return None
+    rest=tokens[3:]
+    if not rest:
+        return False
+    if UPSTREAM_RUN_ID.fullmatch(rest[0]):
+        return True
+    if rest[:6] == ["$","{","{","github.event.workflow_run.id","}","}"]:
+        return True
+    return False
+
+
 def transfers(steps):
     ids=[];unknown=[]
     for i,s in enumerate(steps):
         if not isinstance(s,dict):continue
-        action=str(s.get("uses","")).lower()
+        action=str(s.get("uses","")).lower().strip()
         params=s.get("with") or {}
         if not isinstance(params,dict):params={}
-        command=str(s.get("run",""))
         if re.fullmatch(r"actions/download-artifact@[^\s]+",action):
             run_id=str(params.get("run-id",""))
-            token=str(params.get("github-token",""))
-            # The official action defaults to CURRENT run, not the upstream run.
-            if "github.event.workflow_run.id" in run_id and token:ids.append(i)
-            elif run_id or token:unknown.append("download run identity unresolved")
+            token=str(params.get("github-token","")).strip()
+            if UPSTREAM_RUN_ID.fullmatch(run_id) and token:
+                ids.append(i)
+            elif run_id or token:
+                unknown.append("official artifact run identity not proven")
         elif re.fullmatch(r"dawidd6/action-download-artifact@[^\s]+",action):
-            if "github.event.workflow_run.id" in str(params.get("run_id","")):ids.append(i)
-            else:unknown.append("third-party artifact origin unresolved")
-        elif "gh run download" in command:
-            if "github.event.workflow_run.id" in command:ids.append(i)
-            else:unknown.append("CLI artifact origin unresolved")
-    return ids,unknown
+            run_id=str(params.get("run_id",""))
+            if UPSTREAM_RUN_ID.fullmatch(run_id):
+                ids.append(i)
+            else:
+                unknown.append("third-party artifact origin unresolved")
+        else:
+            command=str(s.get("run",""))
+            commands=shell_commands(command)
+            if commands is None:
+                if "gh run download" in command:
+                    unknown.append("CLI download command could not be parsed")
+                continue
+            for tokens in commands:
+                source=gh_download_source(tokens)
+                if source is True:
+                    ids.append(i)
+                elif source is False:
+                    unknown.append("CLI artifact run identity unresolved")
+    return sorted(set(ids)),unknown
+
 
 def artifact_execution_evidence(steps, download_index):
     """Conservative script-execution candidate correlated to the artifact directory.
@@ -87,27 +147,14 @@ def artifact_execution_evidence(steps, download_index):
             continue
         command=str(step.get("run",""))
         if not command:continue
-        try:
-            lex=shlex.shlex(command,posix=True,punctuation_chars=";&|()")
-            lex.whitespace=" \t\r"
-            lex.whitespace_split=False
-            lex.commenters="#"
-            tokens=list(lex)
-        except ValueError:
-            # An unparseable shell command does not justify critical severity.
+        commands=shell_commands(command)
+        if commands is None:
             continue
-        current=[]
-        for token in [*tokens,"\n"]:
-            if token not in separators:
-                current.append(token)
-                continue
-            if not current:
-                continue
+        for current in commands:
             executable=current[0]
             candidate=None
             if executable in ("bash","sh","source",".","node") or re.fullmatch(r"python(?:\d+(?:\.\d+)?)?",executable):
                 args=current[1:]
-                # A short option flag is not a file. No attempt to decode -c.
                 candidate=next((arg for arg in args if not arg.startswith("-")),None)
             elif executable.startswith("./"):
                 candidate=executable
@@ -115,7 +162,6 @@ def artifact_execution_evidence(steps, download_index):
                 resolved=posixpath.normpath(candidate)
                 if resolved.startswith(directory+"/"):
                     return True
-            current=[]
     return False
 
 def analyze(root="."):
